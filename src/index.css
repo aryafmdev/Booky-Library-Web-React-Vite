@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* 🎨 Global Design Tokens */
+@theme {
+  /* Font */
+  --font-sans: "Quicksand", system-ui, sans-serif;
+
+  /* Colors */
+  --color-primary-100: #F6F9FE;
+  --color-primary-200: #D2E3FF;
+  --color-primary-300: #1C65DA;
+
+  --color-neutral-25: #FDFDFD;
+  --color-neutral-50: #FAFAFA;
+  --color-neutral-100: #F5F5F5;
+  --color-neutral-200: #E9EAEB;
+  --color-neutral-300: #D5D7DA;
+  --color-neutral-400: #A4A7AE;
+  --color-neutral-500: #717680;
+  --color-neutral-600: #535862;
+  --color-neutral-700: #414651;
+  --color-neutral-800: #252B37;
+  --color-neutral-900: #181D27;
+  --color-neutral-950: #0A0D12;
+
+  --color-red: #D9206E;
+  --color-green: #079455;
+  --color-yellow: #FDB022;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+
+  /* Spacing */
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 6px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 20px;
+  --spacing-3xl: 24px;
+  --spacing-4xl: 32px;
+  --spacing-5xl: 40px;
+  --spacing-6xl: 48px;
+  --spacing-7xl: 64px;
+  --spacing-8xl: 80px;
+  --spacing-9xl: 96px;
+  --spacing-10xl: 128px;
+  --spacing-11xl: 140px;
+
+  /* Radius */
+  --radius-none: 0px;
+  --radius-xxs: 2px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 24px;
+  --radius-full: 9999px;
+
+  --text-display-3xl: 3.75rem;
+  --text-display-3xl--line-height: 4.5rem;
+
+  --text-display-2xl: 3rem;
+  --text-display-2xl--line-height: 3.75rem;
+  --text-display-2xl--letter-spacing: -0.02em;
+
+  --text-display-xl: 2.5rem;
+  --text-display-xl--line-height: 3rem;
+  --text-display-xl--letter-spacing: -0.02em;
+
+  --text-display-lg: 2.25rem;
+  --text-display-lg--line-height: 2.75rem;
+  --text-display-lg--letter-spacing: -0.02em;
+
+  --text-display-md: 2rem;
+  --text-display-md--line-height: 2.5rem;
+
+  --text-display-sm: 1.75rem;
+  --text-display-sm--line-height: 2.375rem;
+
+  --text-display-xs: 1.5rem;
+  --text-display-xs--line-height: 2.25rem;
+
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 2.125rem;
+
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 2rem;
+
+  --text-md: 1rem;
+  --text-md--line-height: 1.875rem;
+
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.75rem;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5rem;
+}
+
+/* 🔤 Base Typography Layer */
+@layer base {
+  body {
+    @apply font-sans antialiased bg-neutral-25 text-neutral-900;
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    @apply text-display-3xl font-bold;
+  }
+  h2 {
+    @apply text-display-2xl font-semibold;
+  }
+  h3 {
+    @apply text-display-xl font-semibold;
+  }
+  p {
+    @apply text-md text-neutral-700;
+  }
+  small {
+    @apply text-sm text-neutral-500;
+  }
+
+  a {
+    @apply font-medium text-primary-300 no-underline;
+  }
+  a:hover {
+    @apply text-primary-200;
+  }
+
+  button {
+    @apply rounded-md border border-transparent px-md py-sm text-md font-medium bg-neutral-800 text-white cursor-pointer transition;
+  }
+  button:hover {
+    @apply border-primary-300;
+  }
+}
