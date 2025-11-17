@@ -1,34 +1,70 @@
 import { Link } from 'react-router-dom';
 import logoBooky from '../assets/images/logo-booky.png';
+import heroImage from '../assets/images/hero-image.png';
+import fictionImg from '../assets/images/fiction.png';
+import nonFictionImg from '../assets/images/non-fiction.png';
+import selfImprovementImg from '../assets/images/self-improvement.png';
+import financeImg from '../assets/images/finance.png';
+import scienceImg from '../assets/images/science.png';
+import educationImg from '../assets/images/education.png';
+import image01 from '../assets/images/image01.png';
+import image02 from '../assets/images/image02.png';
+import image03 from '../assets/images/image03.png';
+import image04 from '../assets/images/image04.png';
+import image05 from '../assets/images/image05.png';
+import image06 from '../assets/images/image06.png';
+import image07 from '../assets/images/image07.png';
+import image08 from '../assets/images/image08.png';
+import image09 from '../assets/images/image09.png';
+import image10 from '../assets/images/image10.png';
+import authorImg from '../assets/images/author.png';
+import bookIcon from '../assets/icons/book-icon.png';
 
 function Home() {
   const categories = [
-    { label: 'Fiction', icon: '📚' },
-    { label: 'Non-Fiction', icon: '📖' },
-    { label: 'Self-Improvement', icon: '🌱' },
-    { label: 'Finance', icon: '💰' },
-    { label: 'Science', icon: '🔬' },
-    { label: 'Education', icon: '🎓' },
+    { label: 'Fiction', image: fictionImg },
+    { label: 'Non-Fiction', image: nonFictionImg },
+    { label: 'Self-Improvement', image: selfImprovementImg },
+    { label: 'Finance', image: financeImg },
+    { label: 'Science', image: scienceImg },
+    { label: 'Education', image: educationImg },
+  ];
+
+  const images = [
+    image01,
+    image02,
+    image03,
+    image04,
+    image05,
+    image06,
+    image07,
+    image08,
+    image09,
+    image10,
   ];
 
   const books = Array.from({ length: 10 }).map((_, i) => ({
     id: i + 1,
-    title: 'Book Name',
-    author: 'Author name',
+    title: `Book Name`,
+    author: `Author Name`,
     rating: '4.9',
-    cover: `https://picsum.photos/seed/book-${i}/300/450`,
+    cover: images[i], // ambil dari array images
   }));
 
-  const authors = Array.from({ length: 5 }).map((_, i) => ({
+  const authors = Array.from({ length: 4 }).map((_, i) => ({
     id: i + 1,
     name: 'Author name',
+    icon: bookIcon,
     books: 5,
-    avatar: `https://i.pravatar.cc/100?img=${i + 10}`,
+    avatar: authorImg,
   }));
 
   return (
     <div className='min-h-screen bg-neutral-25 text-neutral-900 font-sans'>
-      <header id='header' className='w-full border-b border-neutral-200 px-4xl py-md'>
+      <header
+        id='header'
+        className='w-full border-b border-neutral-200 px-4xl py-md'
+      >
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-sm'>
             <a href='#header' className='inline-block'>
@@ -61,30 +97,32 @@ function Home() {
       </header>
 
       <main className='px-4xl py-3xl'>
-        <section id='hero' className='rounded-xl overflow-hidden bg-gradient-to-r from-primary-200 to-primary-300 p-4xl text-white'>
-          <h1 className='text-display-xl font-extrabold text-center'>
-            Welcome to Booky
-          </h1>
+        <section className='rounded-xl overflow-hidden'>
+          <img src={heroImage} alt='Hero' className='w-full object-cover' />
         </section>
 
         <section className='mt-3xl'>
-          <div className='flex gap-md overflow-x-auto pb-sm'>
+          <div className='grid grid-cols-3 md:grid-cols-6 gap-md'>
             {categories.map((c) => (
               <div
                 key={c.label}
-                className='min-w-[120px] rounded-lg border border-neutral-200 bg-white px-md py-sm flex items-center gap-sm shadow-sm'
+                className='flex flex-col items-center gap-sm bg-white px-md py-md rounded-xl shadow-sm border border-neutral-200'
               >
-                <span className='h-8 w-8 rounded-md bg-neutral-100 flex items-center justify-center'>
-                  {c.icon}
+                <img
+                  src={c.image}
+                  alt={c.label}
+                  className='w-full h-14 md:h-16 object-cover rounded-md'
+                />
+                <span className='text-xs self-start md:text-sm font-semibold text-neutral-950'>
+                  {c.label}
                 </span>
-                <div className='text-sm text-neutral-700'>{c.label}</div>
               </div>
             ))}
           </div>
         </section>
 
         <section className='mt-4xl'>
-          <h2 className='text-display-md font-semibold text-neutral-800'>
+          <h2 className='text-display-lg font-bold text-neutral-950'>
             Recommendation
           </h2>
           <div className='mt-xl grid grid-cols-2 md:grid-cols-5 gap-2xl'>
@@ -101,9 +139,13 @@ function Home() {
                   />
                 </div>
                 <div className='px-md py-sm'>
-                  <div className='text-sm font-semibold'>{b.title}</div>
-                  <div className='text-xs text-neutral-600'>{b.author}</div>
-                  <div className='mt-xs text-xs text-neutral-700 inline-flex items-center gap-xxs'>
+                  <div className='text-sm md:text-lg font-bold text-neutral-900'>
+                    {b.title}
+                  </div>
+                  <div className='text-sm md:text-md font-medium text-neutral-700'>
+                    {b.author}
+                  </div>
+                  <div className='mt-xs text-sm md:text-md font-semibold text-neutral-900 inline-flex items-center gap-xxs'>
                     <span>⭐</span>
                     <span>{b.rating}</span>
                   </div>
@@ -122,7 +164,7 @@ function Home() {
           <h2 className='text-display-md font-semibold text-neutral-800'>
             Popular Authors
           </h2>
-          <div className='mt-xl grid grid-cols-1 md:grid-cols-5 gap-2xl'>
+          <div className='mt-xl grid grid-cols-1 md:grid-cols-4 gap-xl'>
             {authors.map((a) => (
               <div
                 key={a.id}
@@ -135,7 +177,8 @@ function Home() {
                 />
                 <div>
                   <div className='text-sm font-semibold'>{a.name}</div>
-                  <div className='text-xs text-neutral-600'>
+                  <div className='flex items-center gap-xxs text-xs text-neutral-600'>
+                    <img src={a.icon} alt='book icon' className='w-4 h-4' />
                     {a.books} books
                   </div>
                 </div>
