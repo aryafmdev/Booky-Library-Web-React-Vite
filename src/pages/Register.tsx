@@ -111,18 +111,18 @@ export default function Register() {
               className='h-8 md:h-10'
             />
           </Link>
-          <h1 className='text-lg md:text-xl font-semibold text-neutral-800'>
+          <h1 className='text-display-xs md:text-display-sm font-bold text-neutral-950'>
             Register
           </h1>
-          <p className='text-sm md:text-md text-neutral-600'>
+          <p className='text-sm font-semibold md:text-md text-neutral-700'>
             Create your account to start borrowing books.
           </p>
         </div>
 
         <form onSubmit={onSubmit} className='space-y-4 mt-6'>
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
-              Nama
+            <label className='block text-sm font-medium text-neutral-950'>
+              Name
             </label>
             <input
               type='text'
@@ -138,7 +138,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-medium text-neutral-950'>
               Email
             </label>
             <input
@@ -155,7 +155,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-medium text-neutral-950'>
               Nomor Handphone
             </label>
             <input
@@ -172,7 +172,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-medium text-neutral-950'>
               Password
             </label>
             <input
@@ -189,7 +189,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-medium text-neutral-950'>
               Confirm Password
             </label>
             <input
@@ -209,7 +209,7 @@ export default function Register() {
 
           <button
             type='submit'
-            className='w-full bg-primary-300 text-white py-sm rounded-full text-sm font-medium hover:bg-primary-200 transition disabled:opacity-60'
+            className='w-full bg-primary-300 text-white py-sm rounded-full text-md font-bold hover:bg-primary-200 transition disabled:opacity-60'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Submit'}
@@ -220,11 +220,11 @@ export default function Register() {
           )}
         </form>
 
-        <p className='text-center text-sm text-neutral-600 mt-4'>
+        <p className='text-center text-sm md:text-md font-semibold text-neutral-950 mt-4'>
           Already have an account?{' '}
           <Link
             to='/login'
-            className='text-primary-300 font-medium hover:underline'
+            className='text-primary-300 font-bold text-sm md:text-md hover:underline'
           >
             Login
           </Link>

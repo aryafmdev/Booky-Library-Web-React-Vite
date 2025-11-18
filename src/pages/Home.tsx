@@ -19,6 +19,7 @@ import image09 from '../assets/images/image09.png';
 import image10 from '../assets/images/image10.png';
 import authorImg from '../assets/images/author.png';
 import bookIcon from '../assets/icons/book-icon.png';
+import { Icon } from '@iconify/react';
 
 function Home() {
   const categories = [
@@ -154,14 +155,14 @@ function Home() {
             ))}
           </div>
           <div className='mt-3xl flex items-center justify-center'>
-            <button className='rounded-full text-neutral-900 border border-neutral-200 bg-white px-xl py-sm text-sm'>
+            <button className='rounded-full text-neutral-950 border border-neutral-200 bg-white px-xl py-sm text-sm md:text-md font-bold'>
               Load More
             </button>
           </div>
         </section>
 
         <section className='mt-4xl'>
-          <h2 className='text-display-md font-semibold text-neutral-800'>
+          <h2 className='text-display-xs md:text-display-lg font-bold text-neutral-950'>
             Popular Authors
           </h2>
           <div className='mt-xl grid grid-cols-1 md:grid-cols-4 gap-xl'>
@@ -176,8 +177,8 @@ function Home() {
                   className='h-12 w-12 rounded-full object-cover'
                 />
                 <div>
-                  <div className='text-sm font-semibold'>{a.name}</div>
-                  <div className='flex items-center gap-xxs text-xs text-neutral-600'>
+                  <div className='text-sm text-neutral-950 font-semibold'>{a.name}</div>
+                  <div className='flex items-center gap-xxs text-xs text-neutral-700'>
                     <img src={a.icon} alt='book icon' className='w-4 h-4' />
                     {a.books} books
                   </div>
@@ -192,20 +193,31 @@ function Home() {
         <a href='#header' className='inline-block'>
           <img src={logoBooky} alt='Booky Logo' className='h-8 md:h-10' />
         </a>
-        <p className='mt-sm text-sm text-neutral-600'>
+        <p className='mt-sm text-sm md:text-md font-semibold text-neutral-950'>
           Discover inspiring stories & timeless knowledge, ready to borrow
           anytime. Explore online or visit our nearest library branch.
         </p>
-        <div className='mt-md flex items-center justify-center gap-md text-neutral-700'>
-          <span className='h-8 w-8 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
-            f
-          </span>
-          <span className='h-8 w-8 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
-            x
-          </span>
-          <span className='h-8 w-8 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
-            in
-          </span>
+        <div className='my-3xl flex flex-col items-center text-center text-neutral-700'>
+          <p className='text-md font-bold text-neutral-950 mb-sm'>
+            Follow on Social Media
+          </p>
+          <div className='flex gap-md'>
+            <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+              <Icon icon='ri:facebook-fill' className='size-6 text-neutral-950' />
+            </span>
+            <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+              <Icon icon='mdi:instagram' className='size-6 text-neutral-950' />
+            </span>
+            <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+              <Icon icon='ri:linkedin-fill' className='size-6 text-neutral-950' />
+            </span>
+            <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+              <Icon
+                icon='ic:baseline-tiktok'
+                className='size-6 text-neutral-950'
+              />
+            </span>
+          </div>
         </div>
       </footer>
     </div>

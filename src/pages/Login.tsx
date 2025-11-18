@@ -85,17 +85,17 @@ export default function Login() {
           <Link to='/' className='inline-block'>
             <img src={logoBooky} alt='Booky Logo' className='h-8 md:h-10' />
           </Link>
-          <h1 className='text-lg md:text-xl font-semibold text-neutral-800'>
+          <h1 className='text-display-xs md:text-display-sm md:text-xl font-bold text-neutral-950'>
             Login
           </h1>
-          <p className='text-sm md:text-md text-neutral-600'>
+          <p className='text-sm font-semibold md:text-md text-neutral-700'>
             Sign in to manage your library account.
           </p>
         </div>
 
         <form onSubmit={onSubmit} className='space-y-4 mt-6'>
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-bold text-neutral-950'>
               Email
             </label>
             <input
@@ -112,7 +112,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700'>
+            <label className='block text-sm font-bold text-neutral-950'>
               Password
             </label>
             <input
@@ -130,7 +130,7 @@ export default function Login() {
 
           <button
             type='submit'
-            className='w-full bg-primary-300 text-white py-sm rounded-full text-sm font-medium hover:bg-primary-200 transition disabled:opacity-60'
+            className='w-full bg-primary-300 text-white py-sm rounded-full text-md font-bold hover:bg-primary-200 transition disabled:opacity-60'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Login'}
@@ -141,11 +141,11 @@ export default function Login() {
           )}
         </form>
 
-        <p className='text-center text-sm text-neutral-600 mt-4'>
+        <p className='text-center text-sm md:text-md font-semibold text-neutral-950 mt-4'>
           Don't have an account?{' '}
           <Link
             to='/register'
-            className='text-primary-300 font-medium hover:underline'
+            className='text-primary-300 text-sm md:text-md font-bold hover:underline'
           >
             Register
           </Link>
