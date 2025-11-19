@@ -1,9 +1,21 @@
+import { store } from '../app/store';
+
 const BASE_URL = import.meta.env.VITE_API_URL;
+
+// Helper ambil token dari Redux
+function getToken(): string | null {
+  try {
+    const state = store.getState();
+    return state.auth.token;
+  } catch {
+    return null;
+  }
+}
 
 export async function http<T>(
   path: string,
   opts: RequestInit = {},
-  token?: string | null
+  token?: string | null // tetap opsional, override jika perlu
 ): Promise<T> {
   // siapkan headers default + merge dengan custom headers
   const headers: Record<string, string> = {
@@ -11,9 +23,10 @@ export async function http<T>(
     ...(opts.headers as Record<string, string> | undefined),
   };
 
-  // tambahkan Authorization jika ada token
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  // ambil token dari argumen atau Redux
+  const authToken = token ?? getToken();
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
   }
 
   // lakukan request

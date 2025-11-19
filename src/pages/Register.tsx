@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
 import { apiRegister } from '../lib/api';
-import { authStart, authSuccess, authError } from '../features/auth/authSlice';
-import type { AppDispatch } from '../app/store';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
@@ -40,7 +37,7 @@ const registerSchema = z
   });
 
 export default function Register() {
-  const dispatch = useDispatch<AppDispatch>();
+
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -50,30 +47,12 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const { mutate, isPending, error } = useMutation({
+  const { mutate, isPending, error } = useMutation<unknown, Error, Parameters<typeof apiRegister>[0]>({
     mutationFn: apiRegister,
-    onMutate: () => dispatch(authStart()),
-    onSuccess: (data) => {
-      console.log('Response register:', data);
-      if (!data?.user || !data?.token) {
-        dispatch(authError('Data register tidak lengkap'));
-        return;
-      }
-      dispatch(
-        authSuccess({
-          token: data.token,
-          user: {
-            id: data.user.id,
-            name: data.user.name,
-            email: data.user.email,
-            phone: data.user.phone,
-            role: data.user.role,
-          },
-        })
-      );
-      navigate('/books', { replace: true });
+    onSuccess: () => {
+      // Arahkan ke halaman login setelah registrasi berhasil
+      navigate('/login', { replace: true });
     },
-    onError: (err: Error) => dispatch(authError(err.message)),
   });
 
   const onSubmit = (e: React.FormEvent) => {

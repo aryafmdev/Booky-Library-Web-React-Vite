@@ -14,7 +14,7 @@ export default function Footer() {
             <img src={logoBooky} alt="Booky Logo" className="h-8 w-auto" />
           </a>
         ) : (
-          <HashLink to="/#hero" className="inline-block">
+          <HashLink smooth to="/#hero" className="inline-block">
             <img src={logoBooky} alt="Booky Logo" className="h-8 w-auto" />
           </HashLink>
         )}
@@ -31,7 +31,7 @@ export default function Footer() {
             <Icon icon='ri:facebook-fill' className='size-6 text-neutral-950' />
           </span>
           <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
-            <Icon icon='ri:instagram-fill' className='size-6 text-neutral-950' />
+            <Icon icon='mdi:instagram' className='size-6 text-neutral-950' />
           </span>
           <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
             <Icon icon='ri:linkedin-fill' className='size-6 text-neutral-950' />

@@ -2,7 +2,7 @@ import Header from "../components/Header";
 import Hero from "../components/Hero";
 import Categories from "../components/Categories";
 import Recommendation from "../components/Recommendation";
-import Authors from "../components/Authors";
+import Authors from "../components/AuthorCard";
 import Footer from "../components/Footer";
 
 import fictionImg from "../assets/images/fiction.png";
@@ -67,21 +67,13 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-neutral-25 text-neutral-900 font-sans">
-      {/* Header (styling tetap sama) */}
       <Header />
-
-      {/* Main content (styling dan struktur tetap sama) */}
       <main className="px-4xl py-3xl">
         <Hero />
-
         <Categories categories={categories} />
-
         <Recommendation books={books} />
-
         <Authors authors={authors} />
       </main>
-
-      {/* Footer (styling tetap sama) */}
       <Footer />
     </div>
   );

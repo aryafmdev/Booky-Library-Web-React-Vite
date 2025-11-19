@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
 import { apiLogin } from '../lib/api';
-import { authStart, authSuccess, authError } from '../features/auth/authSlice';
+import { authStart, authSuccessToken, authSuccessUser, authError } from '../features/auth/authSlice';
 import type { AppDispatch } from '../app/store';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
@@ -37,25 +37,37 @@ export default function Login() {
   const { mutate, isPending, error } = useMutation({
     mutationFn: apiLogin,
     onMutate: () => dispatch(authStart()),
-    onSuccess: (data) => {
-      if (!data?.user || !data?.token) {
-        dispatch(authError('Data login tidak lengkap'));
+    onSuccess: async (data) => {
+      if (!data?.token) {
+        dispatch(authError('Token tidak ditemukan'));
         return;
       }
 
-      dispatch(
-        authSuccess({
-          token: data.token,
-          user: {
-            id: data.user.id,
-            name: data.user.name,
-            email: data.user.email,
-            phone: data.user.phone,
-            role: data.user.role,
-          },
-        })
-      );
-      navigate('/books', { replace: true });
+      dispatch(authSuccessToken(data.token));
+
+      try {
+        // Panggil /api/me untuk mendapatkan data user
+        const userResponse = await fetch(
+          'https://be-library-api-xh3x6c5iiq-et.a.run.app/api/me',
+          {
+            headers: {
+              Authorization: `Bearer ${data.token}`,
+            },
+          }
+        );
+
+        if (!userResponse.ok) {
+          throw new Error('Gagal mengambil data pengguna');
+        }
+
+        const userData = await userResponse.json();
+        dispatch(authSuccessUser(userData.data)); // Asumsi data user ada di `userData.data`
+
+        navigate('/', { replace: true });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        dispatch(authError(message));
+      }
     },
     onError: (err: Error) => dispatch(authError(err.message)),
   });
