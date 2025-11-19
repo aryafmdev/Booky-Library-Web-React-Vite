@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { apiGetBooks, apiDeleteBook, type Book } from '../lib/api';
+import { apiGetBooks, apiDeleteBook, apiSearchBooks, type Book } from '../lib/api';
 import BookFilter from '../components/BookFilter';
 import BookListItem from '../components/BookListItem';
 import Header from '../components/Header';
@@ -9,6 +9,8 @@ import Footer from '../components/Footer';
 
 export default function BookList() {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('All');
 
   const { mutate: deleteBook } = useMutation({
     mutationFn: apiDeleteBook,
@@ -23,19 +25,21 @@ export default function BookList() {
     queryKey: ['books'], 
     queryFn: apiGetBooks 
   });
+  const { data: searchBooks } = useQuery({
+    queryKey: ['books', 'search', searchTerm],
+    queryFn: () => apiSearchBooks(searchTerm),
+    enabled: !!searchTerm,
+  });
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('All');
+  
 
   const filteredBooks = useMemo(() => {
-    if (!books) return [];
-
-    return books.filter((book: Book) => {
-      const matchSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const source = searchBooks ?? books ?? [];
+    return source.filter((book: Book) => {
       const matchStatus = selectedStatus === 'All' || book.status === selectedStatus;
-      return matchSearch && matchStatus;
+      return matchStatus;
     });
-  }, [books, searchTerm, selectedStatus]);
+  }, [books, searchBooks, selectedStatus]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Gagal memuat data. Coba lagi nanti.</div>;

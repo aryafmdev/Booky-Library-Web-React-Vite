@@ -21,7 +21,6 @@ const authSlice = createSlice({
       state.status = 'loading';
       state.error = null;
     },
-    // Simpan token dulu (login/register)
     authSuccessToken(state, action: PayloadAction<string>) {
       state.status = 'authenticated';
       state.token = action.payload;
@@ -29,11 +28,19 @@ const authSlice = createSlice({
         localStorage.setItem('token', action.payload);
       }
     },
-    // Simpan user setelah panggil /me
     authSuccessUser(state, action: PayloadAction<User>) {
       state.user = action.payload;
       if (typeof window !== 'undefined') {
         localStorage.setItem('user', JSON.stringify(action.payload));
+      }
+    },
+    setCredentials(state, action: PayloadAction<{ token: string; user: User }>) {
+      state.status = 'authenticated';
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', action.payload.token);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       }
     },
     authError(state, action: PayloadAction<string>) {
@@ -50,7 +57,6 @@ const authSlice = createSlice({
         localStorage.removeItem('user');
       }
     },
-    // optional: update user info manual
     setUser(state, action: PayloadAction<User | null>) {
       state.user = action.payload;
     },
@@ -61,6 +67,7 @@ export const {
   authStart,
   authSuccessToken,
   authSuccessUser,
+  setCredentials,
   authError,
   logout,
   setUser,

@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
-import { apiRegister } from '../lib/api';
+import { apiRegister, apiMe, type ApiResponse, type RegisterPayload } from '../lib/api';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
+import { setCredentials, authError } from '../features/auth/authSlice';
+import type { AppDispatch } from '../app/store';
 
 // Define the schema for validation
 const registerSchema = z
@@ -41,6 +44,7 @@ const registerSchema = z
 export default function Register() {
 
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,11 +53,19 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const { mutate, isPending, error } = useMutation<unknown, Error, Parameters<typeof apiRegister>[0]>({
+  const { mutate, isPending, error } = useMutation<ApiResponse<{ token: string }>, Error, RegisterPayload>({
     mutationFn: apiRegister,
-    onSuccess: () => {
-      // Arahkan ke halaman login setelah registrasi berhasil
-      navigate('/login', { replace: true });
+    onSuccess: async (res) => {
+      const token = res?.data?.token;
+      if (!token) return;
+      try {
+        const user = await apiMe(token);
+        dispatch(setCredentials({ token, user }));
+        navigate('/books', { replace: true });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        dispatch(authError(message));
+      }
     },
   });
 
@@ -78,7 +90,7 @@ export default function Register() {
     }
 
     setErrors({});
-    mutate({ name, email, phone, password }); // hanya kirim data valid
+    mutate({ name, email, phone, password });
   };
 
   return (

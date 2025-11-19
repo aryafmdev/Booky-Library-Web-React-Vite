@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGetBookById, apiBorrowBook, type Book } from '../lib/api';
+import { useDispatch } from 'react-redux';
+import { apiGetBookById, apiBorrowBook, apiAddToCart, type Book, type CartItem } from '../lib/api';
+import { addItem, removeItem } from '../features/cart/cartSlice.ts';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StickyActionBar from '../components/StickyActionBar';
@@ -16,11 +18,13 @@ import { Icon } from '@iconify/react';
 export default function BookDetail() {
   const { bookId } = useParams<{ bookId: string }>();
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const isValidId = !!bookId && /^[0-9]+$/.test(bookId);
 
   const { data: book, isLoading, error } = useQuery<Book>({
     queryKey: ['book', bookId],
     queryFn: () => apiGetBookById(bookId!),
-    enabled: !!bookId,
+    enabled: isValidId,
   });
 
   const borrowMutation = useMutation({
@@ -56,7 +60,32 @@ export default function BookDetail() {
     },
   });
 
+  const addToCartMutation = useMutation({
+    mutationFn: apiAddToCart,
+    onMutate: async (newBookId: number) => {
+      await queryClient.cancelQueries({ queryKey: ['cart'] });
+      const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
+      const optimisticItem: CartItem | null = displayBook && displayBook.id === newBookId ? { book: displayBook } : null;
+      queryClient.setQueryData<CartItem[]>(['cart'], (old) => {
+        const arr = old ?? [];
+        return optimisticItem ? [...arr, optimisticItem] : arr;
+      });
+      dispatch(addItem(String(newBookId)));
+      return { previousCart };
+    },
+    onError: (_err, newBookId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData<CartItem[]>(['cart'], context.previousCart);
+      }
+      dispatch(removeItem(String(newBookId)));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+  });
+
   const handleBorrow = () => {
+    if (!isValidId) return;
     if (book && book.stock_available > 0) {
       borrowMutation.mutate(book.id);
     } else {
@@ -64,8 +93,22 @@ export default function BookDetail() {
     }
   };
   if (isLoading) return <div className="container mx-auto py-8 text-center">Loading...</div>;
-  if (error) return <div className="container mx-auto py-8 text-center text-red-500">Gagal memuat detail buku.</div>;
-  if (!book) return <div className="container mx-auto py-8 text-center">Buku tidak ditemukan.</div>;
+  if (isValidId && error) return <div className="container mx-auto py-8 text-center text-red-500">Gagal memuat detail buku.</div>;
+
+  const fallbackBook: Book = {
+    id: 0,
+    title: 'The Psychology of Money',
+    author: { id: 0, name: 'Morgan Housel' },
+    isbn: '0000000000',
+    category: { id: 0, name: 'Business & Economics' },
+    description:
+      'The Psychology of Money explores how emotions, biases, and human behavior shape the way we think about money, investing, and financial decisions.',
+    stock_available: 0,
+    published_year: 2020,
+    cover_image: image01,
+    status: 'Available',
+  };
+  const displayBook = (isValidId && book) ? book : fallbackBook;
 
   const relatedBooks = [
     {
@@ -111,27 +154,27 @@ export default function BookDetail() {
       <main className='relative pb-[96px] pt-4 px-4xl '>
         {/* Breadcrumb */}
         <nav className='text-xs text-neutral-500 mb-3 md:mb-5'>
-          Home &gt; {book.category.name} &gt; {book.title}
+          Home &gt; {displayBook.category.name} &gt; {displayBook.title}
         </nav>
 
         {/* Book Info */}
         <section className='flex flex-col md:flex-row gap-5 md:gap-10'>
           <img
-            src={book.cover_image}
-            alt={book.title}
+            src={displayBook.cover_image}
+            alt={displayBook.title}
             className='w-full md:w-[337px] rounded-xl shadow-sm object-cover'
           />
 
           <div className='space-y-2 md:space-y-3'>
             <span className='inline-block rounded-full border border-neutral-300 px-sm py-xxs text-xs font-semibold text-neutral-700'>
-              {book.category.name}
+              {displayBook.category.name}
             </span>
 
             <h1 className='text-xl md:text-2xl font-bold text-neutral-950 leading-tight'>
-              {book.title}
+              {displayBook.title}
             </h1>
 
-            <p className='text-sm text-neutral-700'>{book.author.name}</p>
+            <p className='text-sm text-neutral-700'>{displayBook.author.name}</p>
 
             <div className='inline-flex items-center gap-xxs text-sm font-semibold text-neutral-900'>
               <Icon icon='mdi:star' className='size-4 text-yellow-500' />
@@ -155,18 +198,25 @@ export default function BookDetail() {
 
             <p className='text-sm font-bold text-neutral-950'>Description</p>
             <p className='text-sm leading-normal text-neutral-700'>
-              {book.description}
+              {displayBook.description}
             </p>
 
             {/* Desktop Buttons */}
             <div className='hidden md:flex gap-3 pt-3 items-center'>
-              <button className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200'>
-                Add to Cart
+              <button className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200'
+                onClick={() => {
+                  if (isValidId && displayBook.id) {
+                    addToCartMutation.mutate(displayBook.id);
+                  }
+                }}
+                disabled={addToCartMutation.isPending}
+              >
+                {addToCartMutation.isPending ? 'Adding…' : 'Add to Cart'}
               </button>
               <button 
                 className='px-lg py-sm rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300'
                 onClick={handleBorrow}
-                disabled={borrowMutation.isPending || (book && book.stock_available === 0)}
+                disabled={borrowMutation.isPending || (!isValidId) || (displayBook && displayBook.stock_available === 0)}
               >
                 {borrowMutation.isPending ? 'Meminjam...' : 'Pinjam Buku'}
               </button>

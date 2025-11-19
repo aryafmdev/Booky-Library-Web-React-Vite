@@ -1,9 +1,10 @@
 export type User = {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  phone: string;
-  role: 'ADMIN' | 'USER';
+  phone?: string;
+  role?: string;
+  avatar?: string;
 };
 export type AuthState = {
   token: string | null;

@@ -25,16 +25,29 @@ import image10 from "../assets/images/image10.png";
 
 import authorImg from "../assets/images/author.png";
 import bookIcon from "../assets/icons/book-icon.png";
+import { useQuery } from "@tanstack/react-query";
+import { apiGetCategories, type Category } from "../lib/api";
 
 function Home() {
-  const categories = [
-    { label: "Fiction", image: fictionImg },
-    { label: "Non-Fiction", image: nonFictionImg },
-    { label: "Self-Improvement", image: selfImprovementImg },
-    { label: "Finance", image: financeImg },
-    { label: "Science", image: scienceImg },
-    { label: "Education", image: educationImg },
-  ];
+  const imageMap: Record<string, string> = {
+    "Fiction": fictionImg,
+    "Non-Fiction": nonFictionImg,
+    "Self-Improvement": selfImprovementImg,
+    "Finance": financeImg,
+    "Science": scienceImg,
+    "Education": educationImg,
+  };
+
+  const { data: apiCategories } = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: apiGetCategories,
+  });
+
+  const categories = (apiCategories || []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    image: imageMap[c.name] || undefined,
+  }));
 
   const images = [
     image01,

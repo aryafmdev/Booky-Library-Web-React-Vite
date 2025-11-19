@@ -4,11 +4,12 @@ import { useMutation } from '@tanstack/react-query';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { apiLogin } from '../lib/api';
-import { authStart, authSuccessToken, authSuccessUser, authError } from '../features/auth/authSlice';
+import { authStart, authError, setCredentials } from '../features/auth/authSlice';
 import type { AppDispatch } from '../app/store';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
+import { apiMe, apiForgotPassword } from '../lib/api';
 
 // Define the schema for validation
 const loginSchema = z.object({
@@ -45,33 +46,20 @@ export default function Login() {
         return;
       }
 
-      dispatch(authSuccessToken(data.token));
-
       try {
-        // Panggil /api/me untuk mendapatkan data user
-        const userResponse = await fetch(
-          'https://be-library-api-xh3x6c5iiq-et.a.run.app/api/me',
-          {
-            headers: {
-              Authorization: `Bearer ${data.token}`,
-            },
-          }
-        );
-
-        if (!userResponse.ok) {
-          throw new Error('Gagal mengambil data pengguna');
-        }
-
-        const userData = await userResponse.json();
-        dispatch(authSuccessUser(userData.data)); // Asumsi data user ada di `userData.data`
-
-        navigate('/', { replace: true });
+        const user = await apiMe(data.token);
+        dispatch(setCredentials({ token: data.token, user }));
+        navigate('/books', { replace: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         dispatch(authError(message));
       }
     },
     onError: (err: Error) => dispatch(authError(err.message)),
+  });
+
+  const { mutate: forgotMutate, isPending: isPendingForgot, error: errorForgot, isSuccess: successForgot } = useMutation({
+    mutationFn: apiForgotPassword,
   });
 
   const onSubmit = (e: React.FormEvent) => {
@@ -90,6 +78,14 @@ export default function Login() {
 
     setErrors({});
     mutate({ email, password }); // hanya kirim data valid
+  };
+
+  const onForgotPassword = () => {
+    if (!email.trim()) {
+      setErrors((prev) => ({ ...prev, email: 'Email wajib diisi' }));
+      return;
+    }
+    forgotMutate({ email });
   };
 
   return (
@@ -146,8 +142,20 @@ export default function Login() {
             {isPending ? 'Loading…' : 'Login'}
           </Button>
 
+          <div className='mt-2 flex justify-center'>
+            <button type='button' className='text-primary-300 bg-transparent border-none text-sm md:text-md font-bold hover:underline' onClick={onForgotPassword} disabled={isPendingForgot}>
+              {isPendingForgot ? 'Sending…' : 'Forgot Password?'}
+            </button>
+          </div>
+
           {error && (
             <p className='text-xs text-red-500'>{String(error.message)}</p>
+          )}
+          {errorForgot && (
+            <p className='text-xs text-red-500'>{String(errorForgot.message)}</p>
+          )}
+          {successForgot && (
+            <p className='text-xs text-neutral-700'>Reset email sent if account exists.</p>
           )}
         </form>
 
