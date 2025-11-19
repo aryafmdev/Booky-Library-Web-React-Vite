@@ -5,6 +5,9 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import BookDetail from './pages/BookDetail';
+import BookList from './pages/BookList';
+import AddBook from './pages/AddBook';
+import EditBook from './pages/EditBook';
 import { authSuccessUser, logout } from './features/auth/authSlice';
 import type { RootState, AppDispatch } from './app/store';
 
@@ -47,7 +50,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/bookdetail" element={<BookDetail />} />
+        <Route path="/books" element={<BookList />} />
+        <Route path="/books/:bookId" element={<BookDetail />} />
+        <Route path="/add-book" element={<AddBook />} />
+        <Route path="/books/:bookId/edit" element={<EditBook />} />
       </Routes>
     </BrowserRouter>
   );

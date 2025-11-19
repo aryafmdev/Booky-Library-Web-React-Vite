@@ -1,3 +1,5 @@
+import { Card } from "./ui/card";
+
 interface Author {
   id: number;
   name: string;
@@ -12,7 +14,7 @@ export default function Authors({ authors }: { authors: Author[] }) {
       <h2 className="text-display-xs md:text-display-lg font-bold text-neutral-950">Popular Authors</h2>
       <div className="mt-xl grid grid-cols-1 md:grid-cols-4 gap-xl">
         {authors.map((a) => (
-          <div key={a.id} className="rounded-lg border border-neutral-200 bg-white p-md flex items-center gap-md">
+          <Card key={a.id} className="p-md flex items-center gap-md border-neutral-200 bg-white">
             <img src={a.avatar} alt={a.name} className="h-12 w-12 rounded-full object-cover" />
             <div>
               <div className="text-sm text-neutral-950 font-semibold">{a.name}</div>
@@ -21,7 +23,7 @@ export default function Authors({ authors }: { authors: Author[] }) {
                 {a.books} books
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </section>

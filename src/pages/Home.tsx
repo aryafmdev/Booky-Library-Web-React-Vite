@@ -2,7 +2,7 @@ import Header from "../components/Header";
 import Hero from "../components/Hero";
 import Categories from "../components/Categories";
 import Recommendation from "../components/Recommendation";
-import Authors from "../components/AuthorCard";
+import Authors from "../components/Authors";
 import Footer from "../components/Footer";
 
 import fictionImg from "../assets/images/fiction.png";

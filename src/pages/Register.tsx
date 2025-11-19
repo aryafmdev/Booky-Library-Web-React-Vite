@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRegister } from '../lib/api';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
@@ -103,11 +105,9 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Name
             </label>
-            <input
+            <Input
               type='text'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.name ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.name ? 'border-red-500' : ''}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -120,11 +120,9 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Email
             </label>
-            <input
+            <Input
               type='email'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.email ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.email ? 'border-red-500' : ''}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -137,11 +135,9 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Nomor Handphone
             </label>
-            <input
+            <Input
               type='tel'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.phone ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.phone ? 'border-red-500' : ''}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
@@ -154,11 +150,9 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Password
             </label>
-            <input
+            <Input
               type='password'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.password ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.password ? 'border-red-500' : ''}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -171,11 +165,9 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Confirm Password
             </label>
-            <input
+            <Input
               type='password'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.confirmPassword ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.confirmPassword ? 'border-red-500' : ''}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
@@ -186,13 +178,13 @@ export default function Register() {
             )}
           </div>
 
-          <button
+          <Button
             type='submit'
-            className='w-full bg-primary-300 text-white py-sm rounded-full text-md font-bold hover:bg-primary-200 transition disabled:opacity-60'
+            className='w-full'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Submit'}
-          </button>
+          </Button>
 
           {error && (
             <p className='text-xs text-red-500'>{String(error.message)}</p>

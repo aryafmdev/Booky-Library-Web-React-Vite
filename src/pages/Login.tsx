@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
 import { apiLogin } from '../lib/api';
 import { authStart, authSuccessToken, authSuccessUser, authError } from '../features/auth/authSlice';
 import type { AppDispatch } from '../app/store';
@@ -110,11 +112,9 @@ export default function Login() {
             <label className='block text-sm font-bold text-neutral-950'>
               Email
             </label>
-            <input
+            <Input
               type='email'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.email ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.email ? 'border-red-500' : ''}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -127,11 +127,9 @@ export default function Login() {
             <label className='block text-sm font-bold text-neutral-950'>
               Password
             </label>
-            <input
+            <Input
               type='password'
-              className={`mt-1 w-full rounded-xl border px-md py-sm text-sm ${
-                errors.password ? 'border-red-500' : 'border-neutral-300'
-              }`}
+              className={errors.password ? 'border-red-500' : ''}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -140,13 +138,13 @@ export default function Login() {
             )}
           </div>
 
-          <button
+          <Button
             type='submit'
-            className='w-full bg-primary-300 text-white py-sm rounded-full text-md font-bold hover:bg-primary-200 transition disabled:opacity-60'
+            className='w-full'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Login'}
-          </button>
+          </Button>
 
           {error && (
             <p className='text-xs text-red-500'>{String(error.message)}</p>

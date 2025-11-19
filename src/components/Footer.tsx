@@ -2,6 +2,7 @@ import logoBooky from '../assets/images/logo-booky.png';
 import { Icon } from '@iconify/react';
 import { useLocation } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
+import { Button } from './ui/button';
 
 export default function Footer() {
   const location = useLocation();
@@ -27,21 +28,21 @@ export default function Footer() {
           Follow on Social Media
         </p>
         <div className='flex gap-md'>
-          <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+          <Button variant="outline" size="icon" className='rounded-full'>
             <Icon icon='ri:facebook-fill' className='size-6 text-neutral-950' />
-          </span>
-          <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+          </Button>
+          <Button variant="outline" size="icon" className='rounded-full'>
             <Icon icon='mdi:instagram' className='size-6 text-neutral-950' />
-          </span>
-          <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+          </Button>
+          <Button variant="outline" size="icon" className='rounded-full'>
             <Icon icon='ri:linkedin-fill' className='size-6 text-neutral-950' />
-          </span>
-          <span className='size-10 rounded-full border border-neutral-200 bg-white flex items-center justify-center'>
+          </Button>
+          <Button variant="outline" size="icon" className='rounded-full'>
             <Icon
               icon='ic:baseline-tiktok'
               className='size-6 text-neutral-950'
             />
-          </span>
+          </Button>
         </div>
       </div>
     </footer>

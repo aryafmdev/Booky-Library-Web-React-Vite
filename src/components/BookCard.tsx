@@ -1,4 +1,12 @@
 import { Icon } from "@iconify/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { cn } from "../lib/utils";
 
 export interface BookCardProps {
   id?: number;
@@ -18,40 +26,43 @@ export default function BookCard({
 }: BookCardProps) {
   const src = cover ?? "/assets/images/default-cover.png";
 
-  // styling sesuai variant
-  const baseClass =
-    variant === "related" ? "rounded-2xl" : "rounded-lg";
+  const cardClassName = variant === "related" ? "rounded-2xl" : "rounded-lg";
 
   return (
-    <div className={`${baseClass} border border-neutral-200 bg-white overflow-hidden`}>
+    <Card className={cn("overflow-hidden border-neutral-200 bg-white", cardClassName)}>
       <div className="aspect-[2/3] bg-neutral-100">
         <img src={src} alt={title} className="h-full w-full object-cover" />
       </div>
-      <div className="px-md py-sm">
-        <p
-          className={
+
+      <CardHeader className="p-4">
+        <CardTitle
+          className={cn(
+            "font-bold text-neutral-900 leading-tight", // Override font-semibold and add leading-tight
             variant === "recommendation"
-              ? "text-sm md:text-lg font-bold text-neutral-900"
-              : "text-sm md:text-md font-bold text-neutral-900"
-          }
+              ? "text-sm md:text-lg"
+              : "text-sm md:text-md"
+          )}
         >
           {title}
-        </p>
-        <p
-          className={
+        </CardTitle>
+        <CardDescription
+          className={cn(
+            "font-medium text-neutral-700", // Override text-muted-foreground
             variant === "recommendation"
-              ? "text-sm md:text-md font-medium text-neutral-700"
-              : "text-xs text-neutral-700 font-medium"
-          }
+              ? "text-sm md:text-md"
+              : "text-xs"
+          )}
         >
           {author}
-        </p>
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="p-4 pt-0">
         <div
-          className={
-            variant === "recommendation"
-              ? "mt-xs text-sm md:text-md font-semibold text-neutral-900 inline-flex items-center gap-xxs"
-              : "mt-xs inline-flex items-center gap-xxs text-sm font-semibold text-neutral-900"
-          }
+          className={cn(
+            "inline-flex items-center gap-xxs text-sm font-semibold text-neutral-900",
+            variant === "recommendation" ? "md:text-md" : ""
+          )}
         >
           {variant === "related" ? (
             <>
@@ -65,7 +76,7 @@ export default function BookCard({
             </>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
