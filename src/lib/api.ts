@@ -113,6 +113,11 @@ export async function apiGetAuthorById(authorId: string) {
   return res.data;
 }
 
+export async function apiGetBooksByAuthor(authorId: number | string) {
+  const res = await http<ApiResponse<BooksResponse>>(`/authors/${authorId}/books`, { method: 'GET' });
+  return res.data.books;
+}
+
 // Category detail
 export async function apiGetCategoryById(categoryId: string) {
   const res = await http<ApiResponse<Category>>(`/categories/${categoryId}`, { method: 'GET' });
@@ -143,6 +148,38 @@ export async function apiGetBooks() {
   return res.data.books; // Return the nested array of books
 }
 
+export type GetBooksParams = {
+  page?: number;
+  limit?: number;
+  q?: string;
+  category_id?: number;
+  author_id?: number;
+  status?: string;
+  sort?: string;
+  rating_min?: number;
+  rating_max?: number;
+};
+
+export async function apiGetBooksPaged(params: GetBooksParams = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', String(params.page));
+  if (params.limit) query.set('limit', String(params.limit));
+  if (params.q) query.set('q', params.q);
+  if (params.category_id) query.set('category_id', String(params.category_id));
+  if (params.author_id) query.set('author_id', String(params.author_id));
+  if (params.status) query.set('status', params.status);
+  if (params.sort) query.set('sort', params.sort);
+  if (params.rating_min) query.set('rating_min', String(params.rating_min));
+  if (params.rating_max) query.set('rating_max', String(params.rating_max));
+  const res = await http<ApiResponse<BooksResponse>>(`/books?${query.toString()}`, { method: 'GET' });
+  return res.data.books;
+}
+
+export async function apiGetRecommendedBooks() {
+  const res = await http<ApiResponse<BooksResponse>>('/books/recommend', { method: 'GET' });
+  return res.data.books;
+}
+
 export async function apiSearchBooks(q: string) {
   const res = await http<ApiResponse<BooksResponse>>(`/books/search?q=${encodeURIComponent(q)}`, { method: "GET" });
   return res.data.books;
@@ -163,6 +200,13 @@ export async function apiGetBookById(bookId: string) {
 // Pinjam buku
 export async function apiBorrowBook(bookId: number) {
   return http<ApiResponse<BorrowResponse>>("/borrows", {
+    method: "POST",
+    body: JSON.stringify({ book_id: bookId }),
+  });
+}
+
+export async function apiCreateLoan(bookId: number) {
+  return http<ApiResponse<Loan>>("/loans", {
     method: "POST",
     body: JSON.stringify({ book_id: bookId }),
   });
@@ -190,11 +234,15 @@ export async function apiAddBook(payload: AddBookPayload) {
 
 // Cart types
 export interface CartItem {
+  id: number;
   book: Book;
+  qty: number;
 }
 
 export interface CartResponse {
   items: CartItem[];
+  subtotal?: number;
+  grandTotal?: number;
 }
 
 // GET /api/cart
@@ -204,16 +252,27 @@ export async function apiGetCart() {
 }
 
 // POST /api/cart
-export async function apiAddToCart(bookId: number) {
-  return http<ApiResponse<CartResponse>>("/cart", {
+export async function apiAddCartItem(bookId: number, qty: number = 1) {
+  return http<ApiResponse<CartResponse>>("/cart/items", {
     method: "POST",
-    body: JSON.stringify({ book_id: bookId }),
+    body: JSON.stringify({ book_id: bookId, qty }),
   });
 }
 
 // DELETE /api/cart/{bookId}
-export async function apiRemoveFromCart(bookId: number) {
-  return http<ApiResponse<CartResponse>>(`/cart/${bookId}`, { method: "DELETE" });
+export async function apiDeleteCartItem(itemId: number) {
+  return http<ApiResponse<CartResponse>>(`/cart/items/${itemId}`, { method: "DELETE" });
+}
+
+export async function apiUpdateCartItemQty(itemId: number, qty: number) {
+  return http<ApiResponse<CartResponse>>(`/cart/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ qty }),
+  });
+}
+
+export async function apiClearCart() {
+  return http<ApiResponse<CartResponse>>("/cart", { method: "DELETE" });
 }
 
 // POST /api/cart/checkout
@@ -267,6 +326,15 @@ export async function apiUpdateMeProfile(payload: UpdateMePayload) {
 export async function apiGetMyLoans() {
   const res = await http<ApiResponse<{ loans: Loan[] }>>("/me/loans", { method: "GET" });
   return res.data.loans;
+}
+
+export async function apiGetMyLoansV2() {
+  const res = await http<ApiResponse<{ loans: Loan[] }>>("/loans/my", { method: "GET" });
+  return res.data.loans;
+}
+
+export async function apiReturnLoan(loanId: number) {
+  return http<ApiResponse<Loan>>(`/loans/${loanId}/return`, { method: "PATCH" });
 }
 
 export async function apiGetMyReviews() {

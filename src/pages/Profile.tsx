@@ -6,25 +6,60 @@ import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { apiGetMeProfile, apiUpdateMeProfile, apiGetMyLoans, apiGetMyReviews, type MeProfile, type Loan, type Review } from '../lib/api';
+import { apiGetMeProfile, apiUpdateMeProfile, apiGetMyLoansV2, apiGetMyReviews, apiReturnLoan, type MeProfile, type Loan, type Review } from '../lib/api';
 import dayjs from 'dayjs';
+import { Icon } from '@iconify/react';
 
 export default function Profile() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = (searchParams.get('tab') as 'profile' | 'loans' | 'reviews') || 'profile';
+  const selectedBookId = Number(searchParams.get('book') || 0) || undefined;
 
   const { data: me } = useQuery<MeProfile>({ queryKey: ['me'], queryFn: apiGetMeProfile });
-  const { data: loans = [] } = useQuery<Loan[]>({ queryKey: ['me', 'loans'], queryFn: apiGetMyLoans });
+  const { data: loans = [] } = useQuery<Loan[]>({ queryKey: ['loans', 'my'], queryFn: apiGetMyLoansV2 });
   const { data: reviews } = useQuery<Review[]>({ queryKey: ['me', 'reviews'], queryFn: apiGetMyReviews });
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [rating, setRating] = useState<number>(0);
+  const [comment, setComment] = useState<string>('');
 
   const updateMutation = useMutation({
     mutationFn: apiUpdateMeProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
+  });
+
+  const upsertReviewMutation = useMutation({
+    mutationFn: (payload: { book_id: number; rating: number; comment?: string }) =>
+      import('../lib/api').then((m) => m.apiUpsertReview(payload)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me', 'reviews'] });
+      setSearchParams({ tab: 'reviews' });
+      setRating(0);
+      setComment('');
+    },
+  });
+
+  const returnLoanMutation = useMutation({
+    mutationFn: apiReturnLoan,
+    onMutate: async (loanId: number) => {
+      await queryClient.cancelQueries({ queryKey: ['loans', 'my'] });
+      const previous = queryClient.getQueryData<Loan[]>(['loans', 'my']);
+      queryClient.setQueryData<Loan[]>(['loans', 'my'], (old) =>
+        (old || []).map((l) => (l.id === loanId ? { ...l, status: 'Returned' } : l))
+      );
+      return { previous };
+    },
+    onError: (_err, _loanId, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData<Loan[]>(['loans', 'my'], ctx.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['loans', 'my'] });
     },
   });
 
@@ -137,8 +172,18 @@ export default function Profile() {
                                 </div>
                               </div>
                             </div>
-                            <div className="mt-md">
-                              <Button className="w-full md:w-auto rounded-full bg-primary-300 text-white font-bold" onClick={() => setSearchParams({ tab: 'reviews' })}>Give Review</Button>
+                            <div className="mt-md flex gap-sm">
+                              <Button className="rounded-full bg-primary-300 text-white font-bold" onClick={() => setSearchParams({ tab: 'reviews', book: String(l.book.id) })}>Give Review</Button>
+                              {(l.status === 'Active' || l.status === 'Overdue' || !l.status) && (
+                                <Button
+                                  variant="outline"
+                                  className="rounded-full"
+                                  onClick={() => returnLoanMutation.mutate(l.id)}
+                                  disabled={returnLoanMutation.isPending}
+                                >
+                                  {returnLoanMutation.isPending ? 'Returning…' : 'Return Book'}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -160,20 +205,65 @@ export default function Profile() {
         {tab === 'reviews' && (
           <section className="mt-md">
             <h1 className="text-display-xs md:text-display-lg font-bold text-neutral-950 mb-4">Reviews</h1>
-            <div className="space-y-md">
-              {reviews?.map((r) => (
-                <Card key={r.id} className="p-md bg-white border-neutral-200">
-                  <div className="flex items-start gap-md">
-                    <img src={r.book.cover_image} alt={r.book.title} className="w-20 h-28 rounded-md object-cover" />
-                    <div>
-                      <div className="text-sm font-bold text-neutral-950">{r.book.title}</div>
-                      <div className="text-xs text-neutral-700">Rating: {r.rating}</div>
-                      {r.comment && <div className="text-xs text-neutral-700">{r.comment}</div>}
+            {selectedBookId ? (
+              <Card className="p-lg bg-white border-neutral-200">
+                {(() => {
+                  const loan = loans.find((l) => l.book.id === selectedBookId);
+                  return loan ? (
+                    <div className="flex items-start gap-md">
+                      <img src={loan.book.cover_image} alt={loan.book.title} className="w-20 h-28 rounded-md object-cover" />
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-neutral-950">{loan.book.title}</div>
+                        <div className="text-xs text-neutral-700">{loan.book.author.name}</div>
+                        <div className="mt-md flex items-center gap-xs">
+                          {[1,2,3,4,5].map((s) => (
+                            <button key={s} className="size-8 flex items-center justify-center" onClick={() => setRating(s)}>
+                              <Icon icon="mdi:star" className={`size-6 ${rating >= s ? 'text-yellow-500' : 'text-neutral-300'}`} />
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-sm">
+                          <textarea value={comment} onChange={(e) => setComment(e.target.value)} className="w-full min-h-24 rounded-md border border-neutral-300 p-sm text-sm" placeholder="Write your review" />
+                        </div>
+                        <div className="mt-md flex gap-sm">
+                          <Button
+                            className="rounded-full bg-primary-300 text-white font-bold"
+                            onClick={() => selectedBookId && rating > 0 && upsertReviewMutation.mutate({ book_id: selectedBookId, rating, comment: comment || undefined })}
+                            disabled={upsertReviewMutation.isPending || rating === 0}
+                          >
+                            {upsertReviewMutation.isPending ? 'Submitting…' : 'Submit Review'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={() => setSearchParams({ tab: 'reviews' })}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  ) : (
+                    <div className="text-sm text-neutral-700">Book not found.</div>
+                  );
+                })()}
+              </Card>
+            ) : (
+              <div className="space-y-md">
+                {reviews?.map((r) => (
+                  <Card key={r.id} className="p-md bg-white border-neutral-200">
+                    <div className="flex items-start gap-md">
+                      <img src={r.book.cover_image} alt={r.book.title} className="w-20 h-28 rounded-md object-cover" />
+                      <div>
+                        <div className="text-sm font-bold text-neutral-950">{r.book.title}</div>
+                        <div className="text-xs text-neutral-700">Rating: {r.rating}</div>
+                        {r.comment && <div className="text-xs text-neutral-700">{r.comment}</div>}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </section>
         )}
       </main>

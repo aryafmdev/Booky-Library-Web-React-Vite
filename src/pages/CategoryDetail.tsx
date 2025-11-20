@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import BookCard from '../components/BookCard';
-import { apiGetCategoryById, apiGetCategories, apiGetBooks, type Category, type Book } from '../lib/api';
+import { apiGetCategoryById, apiGetCategories, apiGetBooksPaged, type Category, type Book } from '../lib/api';
 import { useMemo, useState } from 'react';
 
 export default function CategoryDetail() {
@@ -23,14 +23,14 @@ export default function CategoryDetail() {
   });
 
   const { data: books, isLoading, error } = useQuery<Book[]>({
-    queryKey: ['books'],
-    queryFn: apiGetBooks,
+    queryKey: ['books', 'category', categoryId],
+    queryFn: () => apiGetBooksPaged({ category_id: Number(categoryId), limit: 20 }),
+    enabled: !!categoryId,
   });
 
   const filtered = useMemo(() => {
-    if (!books || selectedIds.length === 0) return books || [];
-    return books.filter((b) => selectedIds.includes(String(b.category.id)));
-  }, [books, selectedIds]);
+    return books || [];
+  }, [books]);
 
   const toggleCategory = (id: string) => {
     setSelectedIds((prev) =>

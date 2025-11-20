@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
-import { apiGetBookById, apiBorrowBook, apiAddToCart, type Book, type CartItem } from '../lib/api';
+import { apiGetBookById, apiCreateLoan, apiAddCartItem, apiGetReviewsByBook, type Book, type CartItem, type Review } from '../lib/api';
 import { addItem, removeItem } from '../features/cart/cartSlice.ts';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -27,8 +27,14 @@ export default function BookDetail() {
     enabled: isValidId,
   });
 
+  const { data: reviews = [] } = useQuery<Review[]>({
+    queryKey: ['reviews', 'book', bookId],
+    queryFn: () => apiGetReviewsByBook(Number(bookId)),
+    enabled: isValidId,
+  });
+
   const borrowMutation = useMutation({
-    mutationFn: apiBorrowBook,
+    mutationFn: apiCreateLoan,
     onMutate: async (bookIdToBorrow) => {
       // Batalkan query yang sedang berjalan untuk data buku ini
       await queryClient.cancelQueries({ queryKey: ['book', bookId] });
@@ -61,11 +67,11 @@ export default function BookDetail() {
   });
 
   const addToCartMutation = useMutation({
-    mutationFn: apiAddToCart,
+    mutationFn: (bookId: number) => apiAddCartItem(bookId),
     onMutate: async (newBookId: number) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      const optimisticItem: CartItem | null = displayBook && displayBook.id === newBookId ? { book: displayBook } : null;
+      const optimisticItem: CartItem | null = displayBook && displayBook.id === newBookId ? { id: newBookId, book: displayBook, qty: 1 } : null;
       queryClient.setQueryData<CartItem[]>(['cart'], (old) => {
         const arr = old ?? [];
         return optimisticItem ? [...arr, optimisticItem] : arr;
@@ -232,13 +238,14 @@ export default function BookDetail() {
           <h2 className='text-base md:text-lg font-bold text-neutral-950 mb-3'>
             Review
           </h2>
-          <h2 className='text-base md:text-lg font-bold text-neutral-950 mb-3'>
-            ⭐ 4.9 (24 Ulasan)
-          </h2>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <ReviewCard key={i} />
-            ))}
+            {(reviews || []).length > 0 ? (
+              reviews.map((r) => (
+                <ReviewCard key={r.id} name={r.book.author.name} rating={r.rating} text={r.comment || ''} date={r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : undefined} />
+              ))
+            ) : (
+              Array.from({ length: 2 }).map((_, i) => <ReviewCard key={i} />)
+            )}
           </div>
           <div className='mt-4 flex justify-center'>
             <button className='rounded-full text-neutral-950 border border-neutral-200 bg-white px-lg py-sm text-sm font-bold'>

@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import BookCard from '../components/BookCard';
-import { apiGetAuthorById, apiGetBooks, type Author, type Book } from '../lib/api';
+import { apiGetAuthorById, apiGetBooksByAuthor, type Author, type Book } from '../lib/api';
 
 export default function AuthorDetail() {
   const { authorId } = useParams<{ authorId: string }>();
@@ -15,12 +15,11 @@ export default function AuthorDetail() {
     enabled: !!authorId,
   });
 
-  const { data: books, isLoading: isLoadingBooks, error: errorBooks } = useQuery<Book[]>({
-    queryKey: ['books'],
-    queryFn: apiGetBooks,
+  const { data: authorBooks = [], isLoading: isLoadingBooks, error: errorBooks } = useQuery<Book[]>({
+    queryKey: ['authors', authorId, 'books'],
+    queryFn: () => apiGetBooksByAuthor(authorId!),
+    enabled: !!authorId,
   });
-
-  const authorBooks = (books || []).filter((b) => String(b.author.id) === String(authorId));
 
   return (
     <>

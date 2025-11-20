@@ -26,7 +26,7 @@ import image10 from "../assets/images/image10.png";
 import authorImg from "../assets/images/author.png";
 import bookIcon from "../assets/icons/book-icon.png";
 import { useQuery } from "@tanstack/react-query";
-import { apiGetCategories, type Category } from "../lib/api";
+import { apiGetCategories, apiGetRecommendedBooks, apiGetAuthors, type Category, type Book, type Author } from "../lib/api";
 
 function Home() {
   const imageMap: Record<string, string> = {
@@ -41,6 +41,11 @@ function Home() {
   const { data: apiCategories } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: apiGetCategories,
+  });
+
+  const { data: recoBooks = [] } = useQuery<Book[]>({
+    queryKey: ["books", "recommend"],
+    queryFn: apiGetRecommendedBooks,
   });
 
   const categories = (apiCategories || []).map((c) => ({
@@ -62,20 +67,25 @@ function Home() {
     image10,
   ];
 
-  const books = Array.from({ length: 10 }).map((_, i) => ({
-    id: i + 1,
-    title: `Book Name`,
-    author: `Author Name`,
+  const books = (recoBooks || []).map((b, i) => ({
+    id: b.id,
+    title: b.title,
+    author: b.author.name,
     rating: "4.9",
-    cover: images[i],
+    cover: b.cover_image || images[i % images.length],
   }));
 
-  const authors = Array.from({ length: 4 }).map((_, i) => ({
-    id: i + 1,
-    name: "Author name",
+  const { data: apiAuthors = [] } = useQuery<Author[]>({
+    queryKey: ["authors"],
+    queryFn: apiGetAuthors,
+  });
+
+  const authors = (apiAuthors || []).map((a) => ({
+    id: Number(a.id),
+    name: a.name,
     icon: bookIcon,
-    books: 5,
-    avatar: authorImg,
+    books: a.books ?? 0,
+    avatar: a.avatar || authorImg,
   }));
 
   return (

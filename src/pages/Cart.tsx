@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { apiGetCart, apiCheckoutCart, apiRemoveFromCart, type CartItem } from '../lib/api';
+import { apiGetCart, apiCheckoutCart, apiDeleteCartItem, type CartItem } from '../lib/api';
 import { removeItem, clearCart, addItem } from '../features/cart/cartSlice.ts';
 
 export default function Cart() {
@@ -30,22 +30,22 @@ export default function Cart() {
   };
 
   const removeMutation = useMutation({
-    mutationFn: apiRemoveFromCart,
-    onMutate: async (bookId: number) => {
+    mutationFn: ({ itemId }: { itemId: number; bookId: number }) => apiDeleteCartItem(itemId),
+    onMutate: async ({ itemId, bookId }: { itemId: number; bookId: number }) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
       queryClient.setQueryData<CartItem[]>(['cart'], (old) =>
-        (old ?? []).filter((it) => it.book.id !== bookId)
+        (old ?? []).filter((it) => it.id !== itemId)
       );
       setSelected((prev) => prev.filter((x) => x !== bookId));
       dispatch(removeItem(String(bookId)));
       return { previousCart };
     },
-    onError: (_err, bookId, context) => {
+    onError: (_err, vars: { itemId: number; bookId: number }, context) => {
       if (context?.previousCart) {
         queryClient.setQueryData<CartItem[]>(['cart'], context.previousCart);
         // rollback badge quantity
-        dispatch(addItem(String(bookId)));
+        dispatch(addItem(String(vars.bookId)));
       }
     },
     onSettled: () => {
@@ -125,7 +125,7 @@ export default function Cart() {
                       <Button
                         variant="outline"
                         className="rounded-full"
-                        onClick={() => removeMutation.mutate(it.book.id)}
+                        onClick={() => removeMutation.mutate({ itemId: it.id, bookId: it.book.id })}
                         disabled={removeMutation.isPending}
                       >
                         Remove
