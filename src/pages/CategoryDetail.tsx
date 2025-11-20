@@ -6,6 +6,17 @@ import { Card } from '../components/ui/card';
 import BookCard from '../components/BookCard';
 import { apiGetCategoryById, apiGetBooks, type Category, type Book } from '../lib/api';
 import { useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
+import image01 from '../assets/images/image01.png';
+import image02 from '../assets/images/image02.png';
+import image03 from '../assets/images/image03.png';
+import image04 from '../assets/images/image04.png';
+import image05 from '../assets/images/image05.png';
+import image06 from '../assets/images/image06.png';
+import image07 from '../assets/images/image07.png';
+import image08 from '../assets/images/image08.png';
+import image09 from '../assets/images/image09.png';
+import image10 from '../assets/images/image10.png';
 
 const fixedCategories = [
   "Fiction",
@@ -16,9 +27,24 @@ const fixedCategories = [
   "Education",
 ];
 
+const images = [
+  image01,
+  image02,
+  image03,
+  image04,
+  image05,
+  image06,
+  image07,
+  image08,
+  image09,
+  image10,
+];
+
 export default function CategoryDetail() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const [selectionOverride, setSelectionOverride] = useState<{ key: string; value: string[] } | null>(null);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [mobileSelectedRatings, setMobileSelectedRatings] = useState<number[]>([]);
 
   const { data: category } = useQuery<Category>({
     queryKey: ['category', categoryId],
@@ -53,6 +79,23 @@ export default function CategoryDetail() {
     return books.filter((b) => selectedCategories.includes(b.category.name));
   }, [books, selectedCategories]);
 
+  const desiredCount = 8;
+  const limited = (filtered || []).slice(5, 5 + desiredCount);
+  const placeholderCards = Array.from({ length: Math.max(0, desiredCount - limited.length) }).map((_, idx) => ({
+    id: -3000 - idx,
+    title: 'Book Name',
+    author: 'Author name',
+    rating: '4.9',
+    cover: images[idx % images.length],
+  }));
+  const cards = limited.map((b) => ({
+    id: b.id,
+    title: b.title,
+    author: b.author.name,
+    rating: '4.9',
+    cover: b.cover_image,
+  })).concat(placeholderCards);
+
   const toggleCategory = (name: string) => {
     const current = selectionOverride?.key === (categoryId ?? '')
       ? selectionOverride.value
@@ -80,7 +123,7 @@ export default function CategoryDetail() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
-          <div>
+          <div className="hidden md:block">
             <Card className="p-md border-neutral-200 bg-white">
               <div className="text-sm font-bold text-neutral-950 mb-sm">FILTER</div>
               <div className="text-xs font-semibold text-neutral-950 mb-2">Category</div>
@@ -101,10 +144,58 @@ export default function CategoryDetail() {
                 {[5,4,3,2,1].map((r) => (
                   <div key={r} className="flex items-center gap-sm">
                     <input type="checkbox" />
+                    <Icon icon="mdi:star" className="size-4 text-yellow-500" />
                     <span>{r}</span>
                   </div>
                 ))}
               </div>
+            </Card>
+          </div>
+
+          <div className="md:hidden">
+            <Card className="border-neutral-200 bg-white">
+              <button
+                className="w-full bg-white flex items-center justify-between px-md py-sm"
+                onClick={() => setMobileFilterOpen((v) => !v)}
+              >
+                <span className="text-sm font-bold text-neutral-950">Filter</span>
+                <Icon icon="fluent:filter-16-filled" className="size-5 text-neutral-900" />
+              </button>
+              {mobileFilterOpen && (
+                <div className="px-md pb-md">
+                  <div className="text-xs font-semibold text-neutral-950 mb-2">Category</div>
+                  <div className="space-y-sm">
+                    {fixedCategories.map((c) => (
+                      <label key={c} className="flex items-center gap-sm text-sm text-neutral-900">
+                        <input
+                          type="checkbox"
+                          name="mobile-category"
+                          checked={selectedCategories.includes(c)}
+                          onChange={() => toggleCategory(c)}
+                        />
+                        <span>{c}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-lg text-xs font-semibold text-neutral-950">Rating</div>
+                  <div className="mt-sm space-y-xxs text-sm text-neutral-900">
+                    {[5,4,3,2,1].map((r) => (
+                      <label key={r} className="flex items-center gap-sm">
+                        <input
+                          type="checkbox"
+                          name="mobile-rating"
+                          checked={mobileSelectedRatings.includes(r)}
+                          onChange={() => {
+                            setMobileSelectedRatings((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
+                          }}
+                        />
+                        <Icon icon="mdi:star" className="size-4 text-yellow-500" />
+                        <span>{r}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Card>
           </div>
 
@@ -114,9 +205,9 @@ export default function CategoryDetail() {
             ) : error ? (
               <div className="text-red-500">Gagal memuat data.</div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {filtered.map((b) => (
-                  <BookCard key={b.id} title={b.title} author={b.author.name} rating={"4.9"} cover={b.cover_image} variant="related" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {cards.map((b) => (
+                  <BookCard key={b.id} title={b.title} author={b.author} rating={b.rating} cover={b.cover} variant="related" />
                 ))}
               </div>
             )}

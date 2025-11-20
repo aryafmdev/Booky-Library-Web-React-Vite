@@ -1,7 +1,15 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
-import { apiGetBookById, apiCreateLoan, apiAddCartItem, apiGetReviewsByBook, type Book, type CartItem, type Review } from '../lib/api';
+import {
+  apiGetBookById,
+  apiCreateLoan,
+  apiAddCartItem,
+  apiGetReviewsByBook,
+  type Book,
+  type CartItem,
+  type Review,
+} from '../lib/api';
 import { addItem, removeItem } from '../features/cart/cartSlice.ts';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -13,6 +21,7 @@ import image02 from '../assets/images/image02.png';
 import image03 from '../assets/images/image03.png';
 import image04 from '../assets/images/image04.png';
 import image05 from '../assets/images/image05.png';
+import bookDetailImg from '../assets/images/book-detail.png';
 import { Icon } from '@iconify/react';
 
 export default function BookDetail() {
@@ -21,7 +30,11 @@ export default function BookDetail() {
   const dispatch = useDispatch();
   const isValidId = !!bookId && /^[0-9]+$/.test(bookId);
 
-  const { data: book, isLoading, error } = useQuery<Book>({
+  const {
+    data: book,
+    isLoading,
+    error,
+  } = useQuery<Book>({
     queryKey: ['book', bookId],
     queryFn: () => apiGetBookById(bookId!),
     enabled: isValidId,
@@ -61,7 +74,7 @@ export default function BookDetail() {
         queryClient.setQueryData<Book>(['book', bookId], context.previousBook);
       }
       // Tampilkan pesan error (misalnya dengan toast)
-      alert("Gagal meminjam buku. Stok mungkin habis.");
+      alert('Gagal meminjam buku. Stok mungkin habis.');
     },
     onSettled: () => {
       // Refresh data setelah mutasi selesai (baik sukses maupun gagal)
@@ -74,7 +87,10 @@ export default function BookDetail() {
     onMutate: async (newBookId: number) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      const optimisticItem: CartItem | null = displayBook && displayBook.id === newBookId ? { id: newBookId, book: displayBook, qty: 1 } : null;
+      const optimisticItem: CartItem | null =
+        displayBook && displayBook.id === newBookId
+          ? { id: newBookId, book: displayBook, qty: 1 }
+          : null;
       queryClient.setQueryData<CartItem[]>(['cart'], (old) => {
         const arr = old ?? [];
         return optimisticItem ? [...arr, optimisticItem] : arr;
@@ -98,11 +114,17 @@ export default function BookDetail() {
     if (book && book.stock_available > 0) {
       borrowMutation.mutate(book.id);
     } else {
-      alert("Stok buku tidak tersedia.");
+      alert('Stok buku tidak tersedia.');
     }
   };
-  if (isLoading) return <div className="container mx-auto py-8 text-center">Loading...</div>;
-  if (isValidId && error) return <div className="container mx-auto py-8 text-center text-red-500">Gagal memuat detail buku.</div>;
+  if (isLoading)
+    return <div className='container mx-auto py-8 text-center'>Loading...</div>;
+  if (isValidId && error)
+    return (
+      <div className='container mx-auto py-8 text-center text-red-500'>
+        Gagal memuat detail buku.
+      </div>
+    );
 
   const fallbackBook: Book = {
     id: 0,
@@ -111,13 +133,13 @@ export default function BookDetail() {
     isbn: '0000000000',
     category: { id: 0, name: 'Business & Economics' },
     description:
-      'The Psychology of Money explores how emotions, biases, and human behavior shape the way we think about money, investing, and financial decisions.',
+      'The Psychology of Money explores how emotions, biases, and human behavior shape the way we think about money, investing, and financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness, showing that financial success is not about knowledge, but about behavior.',
     stock_available: 0,
     published_year: 2020,
-    cover_image: image01,
+    cover_image: bookDetailImg,
     status: 'Available',
   };
-  const displayBook = (isValidId && book) ? book : fallbackBook;
+  const displayBook = isValidId && book ? book : fallbackBook;
 
   const relatedBooks = [
     {
@@ -183,7 +205,9 @@ export default function BookDetail() {
               {displayBook.title}
             </h1>
 
-            <p className='text-sm text-neutral-700'>{displayBook.author.name}</p>
+            <p className='text-sm text-neutral-700'>
+              {displayBook.author.name}
+            </p>
 
             <div className='inline-flex items-center gap-xxs text-sm font-semibold text-neutral-900'>
               <Icon icon='mdi:star' className='size-4 text-yellow-500' />
@@ -212,7 +236,8 @@ export default function BookDetail() {
 
             {/* Desktop Buttons */}
             <div className='hidden md:flex gap-3 pt-3 items-center'>
-              <button className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200'
+              <button
+                className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200'
                 onClick={() => {
                   if (isValidId && displayBook.id) {
                     addToCartMutation.mutate(displayBook.id);
@@ -222,10 +247,14 @@ export default function BookDetail() {
               >
                 {addToCartMutation.isPending ? 'Adding…' : 'Add to Cart'}
               </button>
-              <button 
+              <button
                 className='px-lg py-sm rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300'
                 onClick={handleBorrow}
-                disabled={borrowMutation.isPending || (!isValidId) || (displayBook && displayBook.stock_available === 0)}
+                disabled={
+                  borrowMutation.isPending ||
+                  !isValidId ||
+                  (displayBook && displayBook.stock_available === 0)
+                }
               >
                 {borrowMutation.isPending ? 'Meminjam...' : 'Pinjam Buku'}
               </button>
@@ -241,22 +270,38 @@ export default function BookDetail() {
             Review
           </h2>
           <div className='md:hidden grid grid-cols-1 gap-4'>
-            {mobileReviews.length > 0 ? (
-              mobileReviews.map((r) => (
-                <ReviewCard key={r.id} name={r.book.author.name} rating={r.rating} text={r.comment || ''} date={r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : undefined} />
-              ))
-            ) : (
-              Array.from({ length: 3 }).map((_, i) => <ReviewCard key={i} />)
-            )}
+            {mobileReviews.length > 0
+              ? mobileReviews.map((r) => (
+                  <ReviewCard
+                    key={r.id}
+                    name={r.book.author.name}
+                    rating={r.rating}
+                    text={r.comment || ''}
+                    date={
+                      r.created_at
+                        ? new Date(r.created_at).toLocaleString('en-GB')
+                        : undefined
+                    }
+                  />
+                ))
+              : Array.from({ length: 3 }).map((_, i) => <ReviewCard key={i} />)}
           </div>
           <div className='hidden md:grid grid-cols-2 gap-4'>
-            {desktopReviews.length > 0 ? (
-              desktopReviews.map((r) => (
-                <ReviewCard key={r.id} name={r.book.author.name} rating={r.rating} text={r.comment || ''} date={r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : undefined} />
-              ))
-            ) : (
-              Array.from({ length: 6 }).map((_, i) => <ReviewCard key={i} />)
-            )}
+            {desktopReviews.length > 0
+              ? desktopReviews.map((r) => (
+                  <ReviewCard
+                    key={r.id}
+                    name={r.book.author.name}
+                    rating={r.rating}
+                    text={r.comment || ''}
+                    date={
+                      r.created_at
+                        ? new Date(r.created_at).toLocaleString('en-GB')
+                        : undefined
+                    }
+                  />
+                ))
+              : Array.from({ length: 6 }).map((_, i) => <ReviewCard key={i} />)}
           </div>
           <div className='mt-4 flex justify-center'>
             <button className='rounded-full text-neutral-950 border border-neutral-200 bg-white px-lg py-sm text-sm font-bold'>

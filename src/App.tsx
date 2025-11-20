@@ -73,6 +73,7 @@ function App() {
         <Route path="/bookdetail" element={<BookDetail />} />
         <Route path="/books/:bookId" element={<BookDetailRoute />} />
         <Route path="/authors/:authorId" element={<AuthorDetail />} />
+        <Route path="/authordetail" element={<AuthorDetail />} />
         <Route path="/categories/:categoryId" element={<CategoryDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
