@@ -4,12 +4,18 @@ import { useMutation } from '@tanstack/react-query';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { apiLogin } from '../lib/api';
-import { authStart, authError, setCredentials } from '../features/auth/authSlice';
+import {
+  authStart,
+  authError,
+  authSuccessToken,
+  authSuccessUser,
+} from '../features/auth/authSlice';
 import type { AppDispatch } from '../app/store';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
 import { apiMe, apiForgotPassword } from '../lib/api';
+import { Icon } from '@iconify/react';
 
 // Define the schema for validation
 const loginSchema = z.object({
@@ -35,6 +41,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({}); // state untuk error Zod
 
   const { mutate, isPending, error } = useMutation({
@@ -46,11 +53,16 @@ export default function Login() {
         return;
       }
 
+      // Set token dulu agar route guard langsung mengizinkan akses
+      dispatch(authSuccessToken(data.token));
+      navigate('/', { replace: true });
+
+      // Ambil profil user; kalau gagal, biarkan user tetap login dengan token
       try {
         const user = await apiMe(data.token);
-        dispatch(setCredentials({ token: data.token, user }));
-        navigate('/books', { replace: true });
+        dispatch(authSuccessUser(user));
       } catch (err) {
+        // optional: simpan error tanpa menggagalkan login
         const message = err instanceof Error ? err.message : String(err);
         dispatch(authError(message));
       }
@@ -58,7 +70,12 @@ export default function Login() {
     onError: (err: Error) => dispatch(authError(err.message)),
   });
 
-  const { mutate: forgotMutate, isPending: isPendingForgot, error: errorForgot, isSuccess: successForgot } = useMutation({
+  const {
+    mutate: forgotMutate,
+    isPending: isPendingForgot,
+    error: errorForgot,
+    isSuccess: successForgot,
+  } = useMutation({
     mutationFn: apiForgotPassword,
   });
 
@@ -123,12 +140,28 @@ export default function Login() {
             <label className='block text-sm font-bold text-neutral-950'>
               Password
             </label>
-            <Input
-              type='password'
-              className={errors.password ? 'border-red-500' : ''}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className='relative'>
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type='button'
+                aria-label='Toggle password visibility'
+                className='absolute bg-white border-none right-3 top-1/2 -translate-y-1/2 text-neutral-600'
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                <Icon
+                  icon={
+                    showPassword ? 'mdi:eye-off-outline' : 'mdi:eye-outline'
+                  }
+                  width={20}
+                  height={20}
+                />
+              </button>
+            </div>
             {errors.password && (
               <p className='text-xs text-red-500 mt-1'>{errors.password}</p>
             )}
@@ -136,14 +169,19 @@ export default function Login() {
 
           <Button
             type='submit'
-            className='w-full'
+            className='w-full bg-primary-300 rounded-full hover:bg-primary-400'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Login'}
           </Button>
 
           <div className='mt-2 flex justify-center'>
-            <button type='button' className='text-primary-300 bg-transparent border-none text-sm md:text-md font-bold hover:underline' onClick={onForgotPassword} disabled={isPendingForgot}>
+            <button
+              type='button'
+              className='text-primary-300 bg-transparent border-none text-sm md:text-md font-bold hover:underline'
+              onClick={onForgotPassword}
+              disabled={isPendingForgot}
+            >
               {isPendingForgot ? 'Sending…' : 'Forgot Password?'}
             </button>
           </div>
@@ -152,10 +190,14 @@ export default function Login() {
             <p className='text-xs text-red-500'>{String(error.message)}</p>
           )}
           {errorForgot && (
-            <p className='text-xs text-red-500'>{String(errorForgot.message)}</p>
+            <p className='text-xs text-red-500'>
+              {String(errorForgot.message)}
+            </p>
           )}
           {successForgot && (
-            <p className='text-xs text-neutral-700'>Reset email sent if account exists.</p>
+            <p className='text-xs text-neutral-700'>
+              Reset email sent if account exists.
+            </p>
           )}
         </form>
 

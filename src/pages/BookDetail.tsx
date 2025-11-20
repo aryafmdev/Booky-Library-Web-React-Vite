@@ -33,6 +33,9 @@ export default function BookDetail() {
     enabled: isValidId,
   });
 
+  const mobileReviews = (reviews || []).slice(0, 3);
+  const desktopReviews = (reviews || []).slice(0, 6);
+
   const borrowMutation = useMutation({
     mutationFn: apiCreateLoan,
     onMutate: async (bookIdToBorrow) => {
@@ -233,18 +236,26 @@ export default function BookDetail() {
           </div>
         </section>
 
-        {/* Reviews */}
         <section className='mt-8 md:mt-12'>
           <h2 className='text-base md:text-lg font-bold text-neutral-950 mb-3'>
             Review
           </h2>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            {(reviews || []).length > 0 ? (
-              reviews.map((r) => (
+          <div className='md:hidden grid grid-cols-1 gap-4'>
+            {mobileReviews.length > 0 ? (
+              mobileReviews.map((r) => (
                 <ReviewCard key={r.id} name={r.book.author.name} rating={r.rating} text={r.comment || ''} date={r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : undefined} />
               ))
             ) : (
-              Array.from({ length: 2 }).map((_, i) => <ReviewCard key={i} />)
+              Array.from({ length: 3 }).map((_, i) => <ReviewCard key={i} />)
+            )}
+          </div>
+          <div className='hidden md:grid grid-cols-2 gap-4'>
+            {desktopReviews.length > 0 ? (
+              desktopReviews.map((r) => (
+                <ReviewCard key={r.id} name={r.book.author.name} rating={r.rating} text={r.comment || ''} date={r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : undefined} />
+              ))
+            ) : (
+              Array.from({ length: 6 }).map((_, i) => <ReviewCard key={i} />)
             )}
           </div>
           <div className='mt-4 flex justify-center'>

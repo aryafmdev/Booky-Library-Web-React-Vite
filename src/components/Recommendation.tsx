@@ -1,4 +1,5 @@
 import BookCard from "./BookCard";
+import { Link } from "react-router-dom";
 
 interface Book {
   id: number;
@@ -14,14 +15,15 @@ export default function Recommendation({ books }: { books: Book[] }) {
       <h2 className="text-display-lg font-bold text-neutral-950">Recommendation</h2>
       <div className="mt-xl grid grid-cols-2 md:grid-cols-5 gap-2xl">
         {books.map((b) => (
-          <BookCard
-            key={b.id}
-            title={b.title}
-            author={b.author}
-            rating={b.rating}
-            cover={b.cover}
-            variant="recommendation"
-          />
+          <Link to="/bookdetail" key={String(b.id)}>
+            <BookCard
+              title={b.title}
+              author={b.author}
+              rating={b.rating}
+              cover={b.cover}
+              variant="recommendation"
+            />
+          </Link>
         ))}
       </div>
       <div className="mt-3xl flex items-center justify-center">

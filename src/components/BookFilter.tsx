@@ -6,15 +6,27 @@ interface BookFilterProps {
   onSearchChange: (term: string) => void;
   selectedStatus: string;
   onStatusChange: (status: string) => void;
+  selectedCategories: string[];
+  onToggleCategory: (name: string) => void;
 }
 
 const statuses = ["All", "Available", "Borrowed", "Returned", "Damaged"];
+const fixedCategories = [
+  "Fiction",
+  "Non-Fiction",
+  "Self-Growth",
+  "Finance",
+  "Science",
+  "Education",
+];
 
 export default function BookFilter({ 
   searchTerm,
   onSearchChange,
   selectedStatus,
-  onStatusChange 
+  onStatusChange,
+  selectedCategories,
+  onToggleCategory,
 }: BookFilterProps) {
   return (
     <div className="space-y-4">
@@ -26,6 +38,20 @@ export default function BookFilter({
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10 w-full border-gray-300 rounded-lg"
         />
+      </div>
+      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+        {fixedCategories.map((cat) => {
+          const active = selectedCategories.includes(cat);
+          return (
+            <button
+              key={cat}
+              onClick={() => onToggleCategory(cat)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${active ? 'bg-blue-100 text-blue-600' : 'bg-white text-gray-600 border border-gray-300'}`}
+            >
+              {cat}
+            </button>
+          );
+        })}
       </div>
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {statuses.map((status) => (

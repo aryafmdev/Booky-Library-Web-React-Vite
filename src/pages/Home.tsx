@@ -29,16 +29,9 @@ import { useQuery } from "@tanstack/react-query";
 import { apiGetCategories, apiGetRecommendedBooks, apiGetAuthors, type Category, type Book, type Author } from "../lib/api";
 
 function Home() {
-  const imageMap: Record<string, string> = {
-    "Fiction": fictionImg,
-    "Non-Fiction": nonFictionImg,
-    "Self-Improvement": selfImprovementImg,
-    "Finance": financeImg,
-    "Science": scienceImg,
-    "Education": educationImg,
-  };
+  // Fixed categories per design
 
-  const { data: apiCategories } = useQuery<Category[]>({
+  useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: apiGetCategories,
   });
@@ -48,10 +41,19 @@ function Home() {
     queryFn: apiGetRecommendedBooks,
   });
 
-  const categories = (apiCategories || []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    image: imageMap[c.name] || undefined,
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const desired = [
+    { name: "Fiction", image: fictionImg },
+    { name: "Non-Fiction", image: nonFictionImg },
+    { name: "Self-Growth", image: selfImprovementImg },
+    { name: "Finance", image: financeImg },
+    { name: "Science", image: scienceImg },
+    { name: "Education", image: educationImg },
+  ];
+  const categories = desired.map((d) => ({
+    id: String(normalize(d.name)),
+    name: d.name,
+    image: d.image,
   }));
 
   const images = [
@@ -67,26 +69,44 @@ function Home() {
     image10,
   ];
 
-  const books = (recoBooks || []).map((b, i) => ({
+  const desiredCount = 10;
+  const mapped = (recoBooks || []).slice(0, desiredCount).map((b, i) => ({
     id: b.id,
-    title: b.title,
-    author: b.author.name,
+    title: "Book Name",
+    author: "Author name",
     rating: "4.9",
     cover: b.cover_image || images[i % images.length],
   }));
+  const placeholders = Array.from({ length: Math.max(0, desiredCount - mapped.length) }).map((_, idx) => ({
+    id: -1000 - idx,
+    title: "Book Name",
+    author: "Author name",
+    rating: "4.9",
+    cover: images[(mapped.length + idx) % images.length],
+  }));
+  const books = [...mapped, ...placeholders];
 
   const { data: apiAuthors = [] } = useQuery<Author[]>({
     queryKey: ["authors"],
     queryFn: apiGetAuthors,
   });
 
-  const authors = (apiAuthors || []).map((a) => ({
-    id: Number(a.id),
-    name: a.name,
+  const authorDesiredCount = 4;
+  const authorsMapped = (apiAuthors || []).slice(0, authorDesiredCount).map((a, i) => ({
+    id: Number(a.id ?? i + 1),
+    name: "Author name",
     icon: bookIcon,
-    books: a.books ?? 0,
+    books: 5,
     avatar: a.avatar || authorImg,
   }));
+  const authorPlaceholders = Array.from({ length: Math.max(0, authorDesiredCount - authorsMapped.length) }).map((_, idx) => ({
+    id: -2000 - idx,
+    name: "Author name",
+    icon: bookIcon,
+    books: 5,
+    avatar: authorImg,
+  }));
+  const authors = [...authorsMapped, ...authorPlaceholders];
 
   return (
     <div className="min-h-screen bg-neutral-25 text-neutral-900 font-sans">

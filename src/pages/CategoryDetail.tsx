@@ -4,12 +4,21 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import BookCard from '../components/BookCard';
-import { apiGetCategoryById, apiGetCategories, apiGetBooksPaged, type Category, type Book } from '../lib/api';
+import { apiGetCategoryById, apiGetBooks, type Category, type Book } from '../lib/api';
 import { useMemo, useState } from 'react';
+
+const fixedCategories = [
+  "Fiction",
+  "Non-Fiction",
+  "Self-Growth",
+  "Finance",
+  "Science",
+  "Education",
+];
 
 export default function CategoryDetail() {
   const { categoryId } = useParams<{ categoryId: string }>();
-  const [selectedIds, setSelectedIds] = useState<string[]>(categoryId ? [categoryId] : []);
+  const [selectionOverride, setSelectionOverride] = useState<{ key: string; value: string[] } | null>(null);
 
   const { data: category } = useQuery<Category>({
     queryKey: ['category', categoryId],
@@ -17,25 +26,44 @@ export default function CategoryDetail() {
     enabled: !!categoryId,
   });
 
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: apiGetCategories,
-  });
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+  const paramCategoryName = useMemo(() => {
+    if (!categoryId) return undefined;
+    const match = fixedCategories.find((c) => normalize(c) === normalize(categoryId));
+    return match;
+  }, [categoryId]);
+
+  const selectedCategories = useMemo(() => {
+    return selectionOverride?.key === (categoryId ?? '')
+      ? selectionOverride.value
+      : (category ? [category.name] : (paramCategoryName ? [paramCategoryName] : []));
+  }, [selectionOverride, categoryId, category, paramCategoryName]);
+
+  
 
   const { data: books, isLoading, error } = useQuery<Book[]>({
-    queryKey: ['books', 'category', categoryId],
-    queryFn: () => apiGetBooksPaged({ category_id: Number(categoryId), limit: 20 }),
-    enabled: !!categoryId,
+    queryKey: ['books'],
+    queryFn: apiGetBooks,
   });
 
   const filtered = useMemo(() => {
-    return books || [];
-  }, [books]);
+    if (!books) return [];
+    if (selectedCategories.length === 0) return books;
+    return books.filter((b) => selectedCategories.includes(b.category.name));
+  }, [books, selectedCategories]);
 
-  const toggleCategory = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  const toggleCategory = (name: string) => {
+    const current = selectionOverride?.key === (categoryId ?? '')
+      ? selectionOverride.value
+      : (category ? [category.name] : (paramCategoryName ? [paramCategoryName] : []));
+    const set = new Set(current);
+    if (set.has(name)) {
+      set.delete(name);
+    } else {
+      set.add(name);
+    }
+    setSelectionOverride({ key: categoryId ?? '', value: Array.from(set) });
   };
 
   return (
@@ -57,14 +85,14 @@ export default function CategoryDetail() {
               <div className="text-sm font-bold text-neutral-950 mb-sm">FILTER</div>
               <div className="text-xs font-semibold text-neutral-950 mb-2">Category</div>
               <div className="space-y-sm">
-                {categories?.map((c) => (
-                  <label key={c.id} className="flex items-center gap-sm text-sm text-neutral-900">
+                {fixedCategories.map((c) => (
+                  <label key={c} className="flex items-center gap-sm text-sm text-neutral-900">
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(String(c.id))}
-                      onChange={() => toggleCategory(String(c.id))}
+                      checked={selectedCategories.includes(c)}
+                      onChange={() => toggleCategory(c)}
                     />
-                    <span>{c.name}</span>
+                    <span>{c}</span>
                   </label>
                 ))}
               </div>

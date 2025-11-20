@@ -65,16 +65,19 @@ export async function apiLogin(payload: { email: string; password: string }) {
 }
 
 // Ambil profil user setelah login
+type MeUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  avatar?: string;
+};
+
 export async function apiMe(token: string) {
-  // Sesuaikan path dengan backend kamu (misalnya /auth/me atau /me)
-  return http<{
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    role?: string;
-    avatar?: string;
-  }>("/auth/me", { method: "GET" }, token);
+  const res = await http<MeUser | ApiResponse<MeUser>>("/auth/me", { method: "GET" }, token);
+  const user = (res as ApiResponse<MeUser>)?.data ?? (res as MeUser);
+  return user;
 }
 
 // Register user baru

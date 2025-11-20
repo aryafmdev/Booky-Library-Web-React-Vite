@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
-import { apiRegister, apiMe, type ApiResponse, type RegisterPayload } from '../lib/api';
+import {
+  apiRegister,
+  type ApiResponse,
+  type RegisterPayload,
+} from '../lib/api';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
-import { setCredentials, authError } from '../features/auth/authSlice';
-import type { AppDispatch } from '../app/store';
+import { } from '../features/auth/authSlice';
+import { Icon } from '@iconify/react';
+import type { } from '../app/store';
 
 // Define the schema for validation
 const registerSchema = z
@@ -42,30 +47,25 @@ const registerSchema = z
   });
 
 export default function Register() {
-
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const { mutate, isPending, error } = useMutation<ApiResponse<{ token: string }>, Error, RegisterPayload>({
+  const { mutate, isPending, error } = useMutation<
+    ApiResponse<{ token: string }>,
+    Error,
+    RegisterPayload
+  >({
     mutationFn: apiRegister,
-    onSuccess: async (res) => {
-      const token = res?.data?.token;
-      if (!token) return;
-      try {
-        const user = await apiMe(token);
-        dispatch(setCredentials({ token, user }));
-        navigate('/books', { replace: true });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        dispatch(authError(message));
-      }
+    onSuccess: () => {
+      navigate('/login', { replace: true });
     },
   });
 
@@ -98,11 +98,7 @@ export default function Register() {
       <div className='w-full max-w-[393px] md:max-w-[560px] md:w-full bg-white rounded-xl shadow-lg p-6 md:p-8'>
         <div className='space-y-1'>
           <Link to='/' className='inline-block'>
-            <img
-              src={logoBooky}
-              alt='Booky Logo'
-              className='h-8 md:h-10'
-            />
+            <img src={logoBooky} alt='Booky Logo' className='h-8 md:h-10' />
           </Link>
           <h1 className='text-display-xs md:text-display-sm font-bold text-neutral-950'>
             Register
@@ -162,12 +158,28 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Password
             </label>
-            <Input
-              type='password'
-              className={errors.password ? 'border-red-500' : ''}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className='relative'>
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type='button'
+                aria-label='Toggle password visibility'
+                className='absolute bg-white border-none right-3 top-1/2 -translate-y-1/2 text-neutral-600'
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                <Icon
+                  icon={
+                    showPassword ? 'mdi:eye-off-outline' : 'mdi:eye-outline'
+                  }
+                  width={20}
+                  height={20}
+                />
+              </button>
+            </div>
             {errors.password && (
               <p className='text-xs text-red-500 mt-1'>{errors.password}</p>
             )}
@@ -177,12 +189,28 @@ export default function Register() {
             <label className='block text-sm font-medium text-neutral-950'>
               Confirm Password
             </label>
-            <Input
-              type='password'
-              className={errors.confirmPassword ? 'border-red-500' : ''}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            <div className='relative'>
+              <Input
+                type={showConfirm ? 'text' : 'password'}
+                className={
+                  errors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'
+                }
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <button
+                type='button'
+                aria-label='Toggle confirm password visibility'
+                className='absolute bg-white border-none right-3 top-1/2 -translate-y-1/2 text-neutral-600'
+                onClick={() => setShowConfirm((v) => !v)}
+              >
+                <Icon
+                  icon={showConfirm ? 'mdi:eye-off-outline' : 'mdi:eye-outline'}
+                  width={20}
+                  height={20}
+                />
+              </button>
+            </div>
             {errors.confirmPassword && (
               <p className='text-xs text-red-500 mt-1'>
                 {errors.confirmPassword}
@@ -192,7 +220,7 @@ export default function Register() {
 
           <Button
             type='submit'
-            className='w-full'
+            className='w-full bg-primary-300 rounded-full hover:bg-primary-400'
             disabled={isPending}
           >
             {isPending ? 'Loading…' : 'Submit'}

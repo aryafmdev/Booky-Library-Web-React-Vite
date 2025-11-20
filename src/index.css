@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
@@ -7,30 +7,31 @@
 /* 🎨 Global Design Tokens */
 @theme {
   /* Font */
-  --font-sans: "Quicksand", system-ui, sans-serif;
+  --font-sans: 'Quicksand', system-ui, sans-serif;
 
   /* Colors */
-  --color-primary-100: #F6F9FE;
-  --color-primary-200: #D2E3FF;
-  --color-primary-300: #1C65DA;
+  --color-primary-100: #f6f9fe;
+  --color-primary-200: #d2e3ff;
+  --color-primary-300: #1c65da;
+  --color-primary-400: #1550ac;
 
-  --color-neutral-25: #FDFDFD;
-  --color-neutral-50: #FAFAFA;
-  --color-neutral-100: #F5F5F5;
-  --color-neutral-200: #E9EAEB;
-  --color-neutral-300: #D5D7DA;
-  --color-neutral-400: #A4A7AE;
+  --color-neutral-25: #fdfdfd;
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e9eaeb;
+  --color-neutral-300: #d5d7da;
+  --color-neutral-400: #a4a7ae;
   --color-neutral-500: #717680;
   --color-neutral-600: #535862;
   --color-neutral-700: #414651;
-  --color-neutral-800: #252B37;
-  --color-neutral-900: #181D27;
-  --color-neutral-950: #0A0D12;
+  --color-neutral-800: #252b37;
+  --color-neutral-900: #181d27;
+  --color-neutral-950: #0a0d12;
 
-  --color-red: #D9206E;
+  --color-red: #d9206e;
   --color-green: #079455;
-  --color-yellow: #FDB022;
-  --color-white: #FFFFFF;
+  --color-yellow: #fdb022;
+  --color-white: #ffffff;
   --color-black: #000000;
 
   /* Spacing */
