@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -22,6 +23,16 @@ export default function AuthorDetail() {
   const { authorId } = useParams<{ authorId: string }>();
   const hasParam = !!authorId;
 
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+    } catch {
+      void 0;
+    }
+  }, [authorId]);
+
   const { data: author, isLoading: isLoadingAuthor, error: errorAuthor } = useQuery<Author>({
     queryKey: ['author', authorId],
     queryFn: () => apiGetAuthorById(authorId!),
@@ -35,12 +46,13 @@ export default function AuthorDetail() {
   });
 
   const images = [image01, image02, image03, image04, image05, image06, image07, image08, image09, image10];
-  const placeholderBooks = Array.from({ length: 10 }).map((_, i) => ({
-    id: -4000 - i,
-    title: 'Book Name',
+  const desiredCount = 10;
+  const cards = Array.from({ length: desiredCount }, (_, i) => ({
+    id: i + 1,
+    title: `Book Name ${i + 1}`,
     author: 'Author name',
-    rating: '4.9',
-    cover: images[i % images.length],
+    rating: '4.9' as const,
+    cover: (authorBooks?.[i]?.cover_image) || images[i % images.length],
   }));
 
   return (
@@ -86,14 +98,10 @@ export default function AuthorDetail() {
           <div className="text-red-500">Gagal memuat buku.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {(hasParam && authorBooks.length > 0 ? authorBooks.map((b) => ({
-              id: b.id,
-              title: b.title,
-              author: b.author.name,
-              rating: '4.9' as const,
-              cover: b.cover_image,
-            })) : placeholderBooks).map((b) => (
-              <BookCard key={b.id} title={b.title} author={b.author} rating={b.rating} cover={b.cover} variant="related" />
+            {cards.map((b) => (
+              <Link to={`/books/${b.id}`} key={String(b.id)}>
+                <BookCard title={b.title} author={b.author} rating={b.rating} cover={b.cover} variant="related" />
+              </Link>
             ))}
           </div>
         )}

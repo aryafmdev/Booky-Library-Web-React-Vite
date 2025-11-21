@@ -1,4 +1,5 @@
 import BookCard from "../components/BookCard";
+import { Link } from "react-router-dom";
 
 interface Book {
   id: number;
@@ -16,14 +17,15 @@ export default function RelatedBooks({ books }: { books: Book[] }) {
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {books.map((b) => (
-          <BookCard
-            key={b.id}
-            title={b.title}
-            author={b.author}
-            rating={b.rating}
-            cover={b.cover}
-            variant="related"
-          />
+          <Link to={`/books/${b.id}`} key={String(b.id)}>
+            <BookCard
+              title={b.title}
+              author={b.author}
+              rating={b.rating}
+              cover={b.cover}
+              variant="related"
+            />
+          </Link>
         ))}
       </div>
     </section>

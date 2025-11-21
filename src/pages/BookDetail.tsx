@@ -1,4 +1,5 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -34,12 +35,31 @@ export default function BookDetail() {
   const { bookId } = useParams<{ bookId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const fromReco = (location.state as { fromReco?: { id?: number; title?: string; author?: string; cover?: string } } | null)?.fromReco;
+  const fromReco = (
+    location.state as {
+      fromReco?: {
+        id?: number;
+        title?: string;
+        author?: string;
+        cover?: string;
+      };
+    } | null
+  )?.fromReco;
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { user } = useSelector((s: RootState) => s.auth);
   const storageKey = `cart_items:${user?.id ?? 'guest'}`;
   const isValidId = !!bookId && /^[0-9]+$/.test(bookId);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+    } catch {
+      void 0;
+    }
+  }, [bookId]);
 
   useQuery<Book>({
     queryKey: ['book', bookId],
@@ -99,7 +119,11 @@ export default function BookDetail() {
         const countSame = arr.filter((it) => it.book.id === newBookId).length;
         const optimisticItem: CartItem | null =
           displayBook && displayBook.id === newBookId
-            ? { id: -(newBookId * 100000 + countSame + 1), book: displayBook, qty: 1 }
+            ? {
+                id: -(newBookId * 100000 + countSame + 1),
+                book: displayBook,
+                qty: 1,
+              }
             : null;
         const next = optimisticItem ? [...arr, optimisticItem] : arr;
         try {
@@ -122,63 +146,52 @@ export default function BookDetail() {
     },
   });
 
-  
-  
-
   const idNum = Number(bookId);
-  const images = [image01, image02, image03, image04, image05, image06, image07, image08, image09, image10];
+  const images = [
+    image01,
+    image02,
+    image03,
+    image04,
+    image05,
+    image06,
+    image07,
+    image08,
+    image09,
+    image10,
+  ];
   const fallbackBook: Book = {
     id: idNum,
-    title: (fromReco?.title ?? (isValidId ? `Book Name ${idNum}` : 'Book Name')),
+    title: fromReco?.title ?? (isValidId ? `Book Name ${idNum}` : 'Book Name'),
     author: { id: 0, name: fromReco?.author ?? 'Author Name' },
     isbn: '0000000000',
-    category: { id: 0, name: 'Fiction/Non-Fiction/Self-Growth/Finance/Science/Education' },
+    category: {
+      id: 0,
+      name: 'Fiction/Non-Fiction/Self-Growth/Finance/Science/Education',
+    },
     description:
       'Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim.',
     stock_available: 0,
     published_year: 2020,
-    cover_image: fromReco?.cover ?? images[((idNum - 1) % images.length + images.length) % images.length],
+    cover_image:
+      fromReco?.cover ??
+      images[(((idNum - 1) % images.length) + images.length) % images.length],
     status: 'Available',
   };
   const displayBook = fallbackBook;
 
-  const relatedBooks = [
-    {
-      id: 1,
-      title: 'Book Name',
-      author: 'Author Name',
-      rating: '4.9',
-      cover: image01,
-    },
-    {
-      id: 2,
-      title: 'Book Name',
-      author: 'Author Name',
-      rating: '4.9',
-      cover: image02,
-    },
-    {
-      id: 3,
-      title: 'Book Name',
-      author: 'Author Name',
-      rating: '4.9',
-      cover: image03,
-    },
-    {
-      id: 4,
-      title: 'Book Name',
-      author: 'Author Name',
-      rating: '4.9',
-      cover: image04,
-    },
-    {
-      id: 5,
-      title: 'Book Name',
-      author: 'Author Name',
-      rating: '4.9',
-      cover: image05,
-    },
-  ];
+  const relatedBooks = (() => {
+    const total = 10;
+    return Array.from({ length: 5 }, (_, i) => {
+      const targetId = ((idNum + (i + 1) - 1) % total) + 1;
+      return {
+        id: targetId,
+        title: `Book Name ${targetId}`,
+        author: 'Author Name',
+        rating: '4.9' as const,
+        cover: images[(targetId - 1) % images.length],
+      };
+    });
+  })();
   return (
     <>
       <Header />
@@ -250,7 +263,11 @@ export default function BookDetail() {
               </button>
               <button
                 className='px-lg py-sm rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
-                onClick={() => navigate('/checkout', { state: { borrowBooks: [displayBook] } })}
+                onClick={() =>
+                  navigate('/checkout', {
+                    state: { borrowBooks: [displayBook] },
+                  })
+                }
                 disabled={borrowMutation.isPending}
               >
                 {borrowMutation.isPending ? 'Borrowing...' : 'Borrow Book'}
@@ -319,7 +336,9 @@ export default function BookDetail() {
             addToCartMutation.mutate(displayBook.id);
           }
         }}
-        onBorrow={() => navigate('/checkout', { state: { borrowBooks: [displayBook] } })}
+        onBorrow={() =>
+          navigate('/checkout', { state: { borrowBooks: [displayBook] } })
+        }
         addPending={addToCartMutation.isPending}
         borrowPending={borrowMutation.isPending}
         disableBorrow={false}

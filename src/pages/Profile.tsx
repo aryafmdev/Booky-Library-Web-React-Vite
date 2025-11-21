@@ -6,16 +6,17 @@ import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import {
-  apiGetMeProfile,
-  apiUpdateMeProfile,
-  apiGetMyLoansV2,
-  apiGetMyReviews,
-  apiReturnLoan,
-  type MeProfile,
-  type Loan,
-  type Review,
-} from '../lib/api';
+  import {
+    apiGetMeProfile,
+    apiUpdateMeProfile,
+    apiGetMyLoansV2,
+    apiGetMyReviews,
+    apiReturnLoan,
+    type MeProfile,
+    type Loan,
+    type Review,
+    type UpsertReviewPayload,
+  } from '../lib/api';
 import dayjs from 'dayjs';
 import { Icon } from '@iconify/react';
 import avatarUser from '../assets/images/avatar-user.png';
@@ -134,12 +135,86 @@ export default function Profile() {
     queryKey: ['me', 'reviews'],
     queryFn: apiGetMyReviews,
   });
+  const [localReviews, setLocalReviews] = useState<Review[]>([]);
+  const [localReviewsLoaded, setLocalReviewsLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const u = localStorage.getItem('user');
+        const id = u ? (JSON.parse(u)?.id as string | undefined) : undefined;
+        const key = `reviews:${id ?? 'guest'}`;
+        const raw = localStorage.getItem(key);
+        let parsed = raw ? (JSON.parse(raw) as Review[]) : [];
+        if (!parsed || parsed.length === 0) {
+          const keys = Object.keys(localStorage).filter((k) => k.startsWith('reviews:'));
+          const altKeys: string[] = [];
+          if (!keys.includes('reviews:guest')) altKeys.push('reviews:guest');
+          if (!keys.includes('reviews:0')) altKeys.push('reviews:0');
+          altKeys.push(...keys);
+          for (const k of altKeys) {
+            try {
+              const r = localStorage.getItem(k);
+              const p = r ? (JSON.parse(r) as Review[]) : [];
+              if (p && p.length > 0) {
+                parsed = p;
+                try {
+                  localStorage.setItem(key, JSON.stringify(parsed));
+                } catch {
+                  void 0;
+                }
+                break;
+              }
+            } catch {
+              void 0;
+            }
+          }
+        }
+        setLocalReviews(parsed);
+        setLocalReviewsLoaded(true);
+      }
+    } catch {
+      setLocalReviews([]);
+      setLocalReviewsLoaded(true);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!reviews || reviews.length === 0) return;
+    setLocalReviews((prev) => {
+      const byBook = new Map<number, Review>();
+      for (const r of prev) byBook.set(r.book.id, r);
+      for (const r of reviews) byBook.set(r.book.id, r);
+      return Array.from(byBook.values());
+    });
+  }, [reviews]);
+  useEffect(() => {
+    if (!localReviewsLoaded) return;
+    try {
+      if (typeof window !== 'undefined') {
+        const u = localStorage.getItem('user');
+        const id = u ? (JSON.parse(u)?.id as string | undefined) : undefined;
+        const key = `reviews:${id ?? 'guest'}`;
+        const raw = localStorage.getItem(key);
+        const prev = raw ? (JSON.parse(raw) as Review[]) : [];
+        const same = prev.length === localReviews.length && prev.every((p, i) => {
+          const n = localReviews[i];
+          return !!n && p.book.id === n.book.id && p.rating === n.rating && (p.comment ?? '') === (n.comment ?? '');
+        });
+        if (!same) {
+          localStorage.setItem(key, JSON.stringify(localReviews));
+        }
+      }
+    } catch {
+      void 0;
+    }
+  }, [localReviews, localReviewsLoaded, user?.id]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
   const [editing, setEditing] = useState(false);
+  const [reviewsQuery, setReviewsQuery] = useState('');
 
   const updateMutation = useMutation({
     mutationFn: apiUpdateMeProfile,
@@ -159,11 +234,8 @@ export default function Profile() {
   });
 
   const upsertReviewMutation = useMutation({
-    mutationFn: (payload: {
-      book_id: number;
-      rating: number;
-      comment?: string;
-    }) => import('../lib/api').then((m) => m.apiUpsertReview(payload)),
+    mutationFn: (payload: UpsertReviewPayload) =>
+      import('../lib/api').then((m) => m.apiUpsertReview(payload)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me', 'reviews'] });
       setSearchParams({ tab: 'reviews' });
@@ -524,14 +596,22 @@ export default function Profile() {
                                     )}
                                     <Button
                                       className='rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
-                                      onClick={() =>
+                                      onClick={() => {
+                                        const existing = [
+                                          ...((reviews ?? []) as Review[]),
+                                          ...localReviews,
+                                        ].find((r) => r.book.id === l.book.id);
+                                        setRating(existing?.rating ?? 0);
+                                        setComment(existing?.comment ?? '');
                                         setSearchParams({
                                           tab: 'reviews',
                                           book: String(l.book.id),
-                                        })
-                                      }
+                                        });
+                                      }}
                                     >
-                                      Give Review
+                                      {([...(reviews ?? []) as Review[], ...localReviews].some((r) => r.book.id === l.book.id)
+                                        ? 'Edit Review'
+                                        : 'Give Review')}
                                     </Button>
                                   </div>
                                 </div>
@@ -560,17 +640,28 @@ export default function Profile() {
                   <h1 className='text-display-xs md:text-display-lg font-bold text-neutral-950 mb-4'>
                     Reviews
                   </h1>
+                  <div className='mb-md'>
+                    <Input
+                      value={reviewsQuery}
+                      onChange={(e) => setReviewsQuery(e.target.value)}
+                      placeholder='Search Reviews'
+                      className='w-full'
+                    />
+                  </div>
                   {selectedBookId ? (
-                    <div className='fixed inset-0 bg-black/30 flex items-center justify-center z-50'>
-                      <Card className='p-lg bg-white border-neutral-200 max-w-md w-full'>
+                    <div className='fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50'>
+                      <Card className='p-lg bg-white border-neutral-200 shadow-lg w-full md:w-1/2'>
                         {(() => {
-                          const loan = loans.find(
+                          const loan = [...loans, ...localLoans].find(
                             (l) => l.book.id === selectedBookId
                           );
                           return loan ? (
                             <div>
-                              <div className='text-md font-bold text-neutral-950 mb-sm'>
-                                Give Review
+                              <div className='flex items-center justify-between mb-sm'>
+                                <div className='text-md font-bold text-neutral-950'>Give Review</div>
+                                <button className='size-8 rounded-full bg-white border-none text-neutral-600 hover:text-neutral-950' onClick={() => setSearchParams({ tab: 'reviews' })} aria-label='Close'>
+                                  <Icon icon='mdi:close' className='size-5' />
+                                </button>
                               </div>
                               <div className='flex items-start gap-md'>
                                 <img
@@ -587,19 +678,19 @@ export default function Profile() {
                                   </div>
                                 </div>
                               </div>
-                              <div className='mt-md text-sm font-semibold text-neutral-950'>
+                              <div className='mt-md text-sm font-semibold text-neutral-950 text-center'>
                                 Give Rating
                               </div>
-                              <div className='mt-xxs flex items-center gap-xs justify-center'>
+                              <div className='mt-xxs flex items-center justify-center'>
                                 {[1, 2, 3, 4, 5].map((s) => (
                                   <button
                                     key={s}
-                                    className='size-8 flex items-center justify-center'
+                                    className='size-10 p-0 flex items-center justify-center bg-white border-none'
                                     onClick={() => setRating(s)}
                                   >
                                     <Icon
-                                      icon='mdi:star'
-                                      className={`size-6 ${
+                                      icon='material-symbols:star-rounded'
+                                      className={`size-10 ${
                                         rating >= s
                                           ? 'text-yellow-500'
                                           : 'text-neutral-300'
@@ -609,25 +700,47 @@ export default function Profile() {
                                 ))}
                               </div>
                               <div className='mt-sm'>
-                                <textarea
-                                  value={comment}
-                                  onChange={(e) => setComment(e.target.value)}
-                                  className='w-full min-h-24 rounded-md border border-neutral-300 p-sm text-sm'
-                                  placeholder='Please share your thoughts about this book'
-                                />
+                                <textarea value={comment} onChange={(e) => setComment(e.target.value)} className='w-full min-h-24 rounded-lg border border-neutral-300 p-sm text-sm' placeholder='Please share your thoughts about this book' />
                               </div>
                               <div className='mt-md'>
                                 <Button
-                                  className='w-full rounded-full bg-primary-300 text-white font-bold'
-                                  onClick={() =>
-                                    selectedBookId &&
-                                    rating > 0 &&
-                                    upsertReviewMutation.mutate({
-                                      book_id: selectedBookId,
-                                      rating,
-                                      comment: comment || undefined,
-                                    })
-                                  }
+                                  className='w-full rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
+                                  onClick={() => {
+                                    if (selectedBookId && rating > 0) {
+                                      const existingReview = [
+                                        ...((reviews ?? []) as Review[]),
+                                        ...localReviews,
+                                      ].find((r) => r.book.id === selectedBookId);
+                                      upsertReviewMutation.mutate({
+                                        id: existingReview?.id,
+                                        book_id: selectedBookId,
+                                        rating,
+                                        comment: comment || undefined,
+                                      });
+                                      const source = [...loans, ...localLoans].find((l) => l.book.id === selectedBookId);
+                                      if (source) {
+                                        setLocalReviews((prev) => {
+                                          const idx = prev.findIndex((r) => r.book.id === selectedBookId);
+                                          const base: Review = {
+                                            id: existingReview?.id ?? Math.floor(Date.now()),
+                                            book: source.book,
+                                            rating,
+                                            comment: comment || undefined,
+                                            created_at: new Date().toISOString(),
+                                          };
+                                          if (idx >= 0) {
+                                            const next = [...prev];
+                                            next[idx] = base;
+                                            return next;
+                                          }
+                                          return [base, ...prev];
+                                        });
+                                      }
+                                      setSearchParams({ tab: 'reviews' });
+                                      setRating(0);
+                                      setComment('');
+                                    }
+                                  }}
                                   disabled={
                                     upsertReviewMutation.isPending ||
                                     rating === 0
@@ -637,16 +750,7 @@ export default function Profile() {
                                     ? 'Sending…'
                                     : 'Send'}
                                 </Button>
-                                <div className='mt-sm flex justify-center'>
-                                  <button
-                                    className='text-sm text-neutral-700'
-                                    onClick={() =>
-                                      setSearchParams({ tab: 'reviews' })
-                                    }
-                                  >
-                                    Close
-                                  </button>
-                                </div>
+                              
                               </div>
                             </div>
                           ) : (
@@ -659,52 +763,36 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div className='space-y-md'>
-                      {reviews?.map((r) => (
-                        <Card
-                          key={r.id}
-                          className='p-md bg-white border-neutral-200'
-                        >
+                      {[...((reviews ?? []) as Review[]), ...localReviews]
+                        .filter((r) => {
+                          const q = reviewsQuery.trim().toLowerCase();
+                          if (!q) return true;
+                          return (
+                            r.book.title.toLowerCase().includes(q) ||
+                            (r.comment ?? '').toLowerCase().includes(q) ||
+                            r.book.author.name.toLowerCase().includes(q) ||
+                            r.book.category.name.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((r) => (
+                        <Card key={r.id} className='p-md bg-white border-neutral-200'>
                           <div className='text-xs text-neutral-700 mb-sm'>
-                            {r.created_at
-                              ? dayjs(r.created_at).format(
-                                  'DD MMMM YYYY, HH:mm'
-                                )
-                              : '-'}
+                            {r.created_at ? dayjs(r.created_at).format('DD MMMM YYYY, HH:mm') : '-'}
                           </div>
                           <div className='flex items-start gap-md'>
-                            <img
-                              src={r.book.cover_image}
-                              alt={r.book.title}
-                              className='w-20 h-28 rounded-md object-cover'
-                            />
+                            <img src={r.book.cover_image} alt={r.book.title} className='w-20 h-28 rounded-md object-cover' />
                             <div className='flex-1'>
                               <span className='inline-block rounded-full border border-neutral-300 px-sm py-xxs text-xs font-semibold text-neutral-700'>
                                 {r.book.category.name}
                               </span>
-                              <div className='mt-xxs text-neutral-950 font-bold text-md'>
-                                {r.book.title}
-                              </div>
-                              <div className='text-xs text-neutral-700'>
-                                {r.book.author.name}
-                              </div>
+                              <div className='mt-xxs text-neutral-950 font-bold text-md'>{r.book.title}</div>
+                              <div className='text-xs text-neutral-700'>{r.book.author.name}</div>
                               <div className='mt-sm flex items-center gap-xxs'>
                                 {[1, 2, 3, 4, 5].map((s) => (
-                                  <Icon
-                                    key={s}
-                                    icon='mdi:star'
-                                    className={`size-4 ${
-                                      r.rating >= s
-                                        ? 'text-yellow-500'
-                                        : 'text-neutral-300'
-                                    }`}
-                                  />
+                                  <Icon key={s} icon='material-symbols:star-rounded' className={`size-4 ${r.rating >= s ? 'text-yellow-500' : 'text-neutral-300'}`} />
                                 ))}
                               </div>
-                              {r.comment && (
-                                <div className='mt-xxs text-xs text-neutral-700'>
-                                  {r.comment}
-                                </div>
-                              )}
+                              {r.comment && <div className='mt-xxs text-xs text-neutral-700'>{r.comment}</div>}
                             </div>
                           </div>
                         </Card>

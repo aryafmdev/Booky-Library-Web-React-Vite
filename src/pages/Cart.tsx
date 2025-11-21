@@ -75,7 +75,10 @@ export default function Cart() {
     },
   });
 
-  const selectedBooks = useMemo(() => items.filter((it) => selected.includes(it.id)).map((it) => it.book), [items, selected]);
+  const selectedBooks = useMemo(
+    () => items.filter((it) => selected.includes(it.id)).map((it) => it.book),
+    [items, selected]
+  );
 
   useEffect(() => {
     if (!isLoading && items.length === 0) {
@@ -94,6 +97,33 @@ export default function Cart() {
       }
     }
   }, [isLoading, items.length, queryClient, storageKey]);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem(storageKey);
+        const parsed = raw ? (JSON.parse(raw) as CartItem[]) : [];
+        if (Array.isArray(parsed)) {
+          const same =
+            parsed.length === items.length &&
+            parsed.every((p, i) => {
+              const s = items[i];
+              return (
+                !!s &&
+                p.id === s.id &&
+                p.book.id === s.book.id &&
+                p.qty === s.qty
+              );
+            });
+          if (!same) {
+            queryClient.setQueryData<CartItem[]>(['cart'], parsed);
+          }
+        }
+      }
+    } catch (e) {
+      void e;
+    }
+  }, [items, queryClient, storageKey]);
 
   const totalItems = selected.length;
 
@@ -123,10 +153,7 @@ export default function Cart() {
             ) : (
               <ul className='space-y-md'>
                 {items.map((it) => (
-                  <li
-                    key={it.id}
-                    className='pb-md border-b border-neutral-200'
-                  >
+                  <li key={it.id} className='pb-md border-b border-neutral-200'>
                     <div className='flex items-start gap-md'>
                       <input
                         type='checkbox'
@@ -184,7 +211,11 @@ export default function Cart() {
               </div>
               <Button
                 className='mt-md w-full rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300 hover:bg-primary-400'
-                onClick={() => navigate('/checkout', { state: { borrowBooks: selectedBooks } })}
+                onClick={() =>
+                  navigate('/checkout', {
+                    state: { borrowBooks: selectedBooks },
+                  })
+                }
                 disabled={selected.length === 0}
               >
                 Borrow Book
@@ -200,7 +231,9 @@ export default function Cart() {
           </div>
           <Button
             className='rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300 hover:bg-primary-400'
-            onClick={() => navigate('/checkout', { state: { borrowBooks: selectedBooks } })}
+            onClick={() =>
+              navigate('/checkout', { state: { borrowBooks: selectedBooks } })
+            }
             disabled={selected.length === 0}
           >
             Borrow Book

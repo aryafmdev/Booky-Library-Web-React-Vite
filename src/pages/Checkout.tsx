@@ -8,7 +8,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { apiGetMeProfile, apiGetCart, apiCheckoutCart, apiDeleteCartItem, type MeProfile, type CartItem, type Book } from '../lib/api';
-import { clearCart, removeItem } from '../features/cart/cartSlice.ts';
+import { removeItem } from '../features/cart/cartSlice.ts';
 import type { RootState } from '../app/store';
 
 export default function Checkout() {
@@ -129,21 +129,21 @@ export default function Checkout() {
   const checkoutMutation = useMutation({
     mutationFn: apiCheckoutCart,
     onMutate: async (_bookIds: number[]) => {
-      void _bookIds.length;
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      queryClient.setQueryData<CartItem[]>(['cart'], []);
-      dispatch(clearCart());
+      const next = (previousCart ?? []).filter((it) => !_bookIds.includes(it.book.id));
+      queryClient.setQueryData<CartItem[]>(['cart'], next);
       try {
         if (typeof window !== 'undefined') {
           const u = localStorage.getItem('user');
           const id = u ? (JSON.parse(u)?.id as string | undefined) : undefined;
           const key = `cart_items:${id ?? 'guest'}`;
-          localStorage.removeItem(key);
+          localStorage.setItem(key, JSON.stringify(next));
         }
       } catch (e) {
         void e;
       }
+      _bookIds.forEach((bid) => dispatch(removeItem(String(bid))));
       return { previousCart };
     },
     onError: (_err, _bookIds, context) => {

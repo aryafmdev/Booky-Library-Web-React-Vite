@@ -136,8 +136,8 @@ export default function Login() {
   };
 
   return (
-    <div className='min-h-screen bg-neutral-900 flex items-center justify-center px-4'>
-      <div className='w-full max-w-[393px] md:max-w-[560px] md:w-full bg-white rounded-xl shadow-lg p-6 md:p-8'>
+    <div className='min-h-screen bg-neutral-900 flex items-center justify-center px-4' onClick={() => navigate('/')}>
+      <div className='w-full max-w-[393px] md:max-w-[560px] md:w-full bg-white rounded-xl shadow-lg p-6 md:p-8' onClick={(e) => e.stopPropagation()}>
         <div className='space-y-1'>
           <Link to='/' className='inline-block'>
             <img src={logoBooky} alt='Booky Logo' className='h-8 md:h-10' />
