@@ -1,73 +1,83 @@
-# React + TypeScript + Vite
+# 📚 Library Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, scalable **React + TypeScript + Vite** Library Web Application built with atomic design principles.  
+This project is designed to be **audit‑ready**, mentor‑compatible, and focused on clean architecture.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
+- 🔐 Authentication (Register, Login, Forgot Password)
+- 📖 Book List with search & filter
+- 📚 Book Detail with stock & reviews
+- 📝 Borrow books with optimistic update
+- 📂 User Loans & Profile
+- 🛒 Optional Cart & Checkout
+- 🎨 Responsive UI (Mobile ≤393px, Desktop ≥md)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 Tech Stack
+- ⚛️ **React + TypeScript + Vite** → core framework & dev server
+- 🎨 **Tailwind CSS + shadcn/ui** → styling & UI components
+- 🔄 **Redux Toolkit** → global auth state (token, user info)
+- 📡 **TanStack Query** → API fetching & caching
+- ⏰ **Day.js** → date formatting & validation
+- 🎬 **Framer Motion (optional)** → animations
+- 🌐 **Swagger API** → core backend (auth, books, loans, reviews, profile, cart)
+- 📚 **Open Library API** → extra metadata (cover, description, ISBN)
+- 🛠 **React Router DOM** → multi‑page routing (Login, Register, Book List, Book Detail, Loans, Profile, Cart)
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/library-web-app.git
+cd library-web-app
+2. Install dependencies
+bash
+npm install
+3. Environment setup
+Create a .env.local file and configure your keys:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+env
+VITE_API_BASE_URL=https://be-library-api-xh3x6c5iiq-et.a.run.app/api
+VITE_OPEN_LIBRARY_API=https://openlibrary.org
+(See .env.example for full list of variables.)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. Run the development server
+bash
+npm run dev
+App will be available at: 👉 http://localhost:5173 (React + Vite default port)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+5. Build for production
+bash
+npm run build
+npm run preview
+🔑 Dummy Account for Testing
+Use this account to explore the app:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Email: johndoe@example.com
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Password: 123456
+
+✅ Verification
+Run npm run lint && npm run build before pushing changes.
+
+All commits follow Conventional Commit style.
+
+Styling integrity preserved; only logic/data updated when necessary.
+
+📌 Notes
+Default category fallback: Fiction, Non-Fiction, Self-Growth, Finance, Science, Education.
+
+Borrow date in Checkout is restricted to today onwards.
+
+Search in header (mobile & desktop) routes to /categories/<slug>.
+
+🤝 Contribution
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+📜 License
+This project is licensed under the MIT License.
