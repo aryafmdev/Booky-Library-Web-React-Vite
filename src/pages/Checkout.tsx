@@ -115,7 +115,14 @@ export default function Checkout() {
     setBorrowBooksState((prev) => prev.filter((b) => b.id !== bookId));
   };
 
-  const [borrowDate, setBorrowDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const todayStr = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  })();
+  const [borrowDate, setBorrowDate] = useState<string>(() => todayStr);
   const [duration, setDuration] = useState<number>(3);
   const [agreeReturn, setAgreeReturn] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
@@ -269,7 +276,16 @@ export default function Checkout() {
               <div className="mb-sm">
                 <div className="text-xs font-semibold text-neutral-950 mb-xxs">Borrow Date</div>
                 <div className="flex items-center gap-sm">
-                  <Input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} className="flex-1" />
+                  <Input
+                    type="date"
+                    value={borrowDate}
+                    min={todayStr}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setBorrowDate(v < todayStr ? todayStr : v);
+                    }}
+                    className="flex-1"
+                  />
                 </div>
               </div>
 

@@ -10,7 +10,7 @@ import Footer from '../components/Footer';
 export default function BookList() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') ?? '');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const param = searchParams.get('category');

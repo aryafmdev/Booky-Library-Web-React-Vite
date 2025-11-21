@@ -159,6 +159,19 @@ export default function BookDetail() {
     image09,
     image10,
   ];
+  const idToCategory: Record<number, string> = {
+    1: 'Finance',
+    2: 'Education',
+    3: 'Self-Growth',
+    4: 'Non-Fiction',
+    5: 'Fiction',
+    6: 'Science',
+    7: 'Self-Growth',
+    8: 'Fiction',
+    9: 'Fiction',
+    10: 'Education',
+  };
+  const catName = idToCategory[(((idNum - 1) % 10) + 10) % 10 + 1] ?? 'Fiction';
   const fallbackBook: Book = {
     id: idNum,
     title: fromReco?.title ?? (isValidId ? `Book Name ${idNum}` : 'Book Name'),
@@ -166,7 +179,7 @@ export default function BookDetail() {
     isbn: '0000000000',
     category: {
       id: 0,
-      name: 'Fiction/Non-Fiction/Self-Growth/Finance/Science/Education',
+      name: catName,
     },
     description:
       'Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim.',

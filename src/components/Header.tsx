@@ -24,8 +24,28 @@ export default function Header() {
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const mobileToggleRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const toCategory = (s: string) => {
+    const t = normalize(s);
+    const mapping: Record<string, string> = {
+      fiction: 'fiction',
+      nonfiction: 'non-fiction',
+      selfgrowth: 'self-growth',
+      finance: 'finance',
+      science: 'science',
+      education: 'education',
+    };
+    const keys = Object.keys(mapping);
+    for (const k of keys) {
+      if (t.includes(k)) return mapping[k];
+    }
+    return 'fiction';
+  };
   const displayName = (() => {
     const base =
       (user?.name || '').trim() || (user?.email?.split('@')[0] || '').trim();
@@ -59,10 +79,15 @@ export default function Header() {
           setOpenMobile(false);
         }
       }
+      if (mobileSearchOpen) {
+        if (mobileSearchRef.current && !mobileSearchRef.current.contains(target)) {
+          setMobileSearchOpen(false);
+        }
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [openDesktop, openMobile]);
+  }, [openDesktop, openMobile, mobileSearchOpen]);
 
   return (
     <header
@@ -99,7 +124,10 @@ export default function Header() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') navigate('/books');
+                if (e.key === 'Enter') {
+                  const slug = toCategory(search);
+                  navigate(`/categories/${slug}`);
+                }
               }}
               className='rounded-full pl-10'
             />
@@ -217,7 +245,13 @@ export default function Header() {
         {/* Mobile Icons */}
         <div className='md:hidden flex items-center relative'>
           {/* Search Icon */}
-          <div className='relative rounded-full bg-white flex items-center justify-center size-8 cursor-pointer'>
+          <div
+            className='relative rounded-full bg-white flex items-center justify-center size-8 cursor-pointer'
+            onClick={() => {
+              setMobileSearchOpen(true);
+              setTimeout(() => mobileSearchInputRef.current?.focus(), 0);
+            }}
+          >
             <Icon icon='ic:round-search' className='size-7 text-neutral-950' />
           </div>
 
@@ -326,6 +360,36 @@ export default function Header() {
                   </Link>
                 </div>
               )}
+            </div>
+          )}
+          {mobileSearchOpen && (
+            <div ref={mobileSearchRef} className='absolute w-50 right-18 top-1/2 -translate-y-1/2'>
+              <div className='relative'>
+                <Input
+                  ref={mobileSearchInputRef}
+                  placeholder='Search book'
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setMobileSearchOpen(false);
+                      const slug = toCategory(search);
+                      navigate(`/categories/${slug}`);
+                    }
+                  }}
+                  className='rounded-full pl-10 bg-white text-neutral-950'
+                />
+                <Icon
+                  icon='lucide:search'
+                  className='absolute left-3 top-1/2 -translate-y-1/2 text-neutral-950'
+                />
+                <button
+                  className='absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none'
+                  onClick={() => setMobileSearchOpen(false)}
+                >
+                  <Icon icon='mdi:close' className='size-6 text-neutral-950' />
+                </button>
+              </div>
             </div>
           )}
         </div>

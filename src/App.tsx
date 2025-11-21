@@ -18,6 +18,8 @@ import Success from './pages/Success';
 import { authSuccessUser, logout } from './features/auth/authSlice';
 import { setItems, clearCart } from './features/cart/cartSlice.ts';
 import type { RootState, AppDispatch } from './app/store';
+import { apiGetMeProfile } from './lib/api';
+import type { User } from './features/auth/types';
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const token = useSelector((state: RootState) => state.auth.token);
@@ -101,28 +103,13 @@ function App() {
     if (token) {
       const validateToken = async () => {
         try {
-          const response = await fetch(
-            'https://be-library-api-xh3x6c5iiq-et.a.run.app/api/me',
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error('Sesi tidak valid');
-          }
-
-          const userData = await response.json();
-          const normalized = normalizeUser(userData?.data ?? userData);
+          const me = await apiGetMeProfile();
+          const normalized = normalizeUser(me) as User;
           dispatch(authSuccessUser(normalized));
         } catch {
-          // Jika token tidak valid, logout
           dispatch(logout());
         }
       };
-
       validateToken();
     }
   }, [token, dispatch]);

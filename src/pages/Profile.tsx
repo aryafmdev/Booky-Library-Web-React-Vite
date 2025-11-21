@@ -526,11 +526,11 @@ export default function Profile() {
                                 <div className='flex-1'>
                                   <div className='flex justify-between items-start'>
                                     <span
-                                      className={`inline-flex px-sm py-xxs rounded-full border text-xs font-semibold ${statusClass}`}
+                                      className={`inline-flex leading-tight px-sm py-xxs rounded-full border text-xs font-semibold ${statusClass}`}
                                     >
                                       Status {l.status}
                                     </span>
-                                    <span className='inline-flex px-sm py-xxs rounded-full border border-red-200 bg-red-50 text-red-700 text-xs font-semibold'>
+                                    <span className='inline-flex leading-tight py-xxs rounded-full border border-red-200 bg-red-50 text-red-700 text-xs font-semibold'>
                                       Due Date{' '}
                                       <span className='ml-xxs font-bold'>
                                         {dueLabel}
@@ -566,7 +566,7 @@ export default function Profile() {
                                       !l.status) && (
                                       <Button
                                         variant='outline'
-                                        className='rounded-full text-neutral-700'
+                                        className='rounded-full leading-tight text-neutral-950'
                                         onClick={() => {
                                           if (l.id < 0) {
                                             returnLocalLoan(l.id);
@@ -595,7 +595,7 @@ export default function Profile() {
                                       </Button>
                                     )}
                                     <Button
-                                      className='rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
+                                      className='rounded-full bg-primary-300 text-white font-bold leading-tight hover:bg-primary-400'
                                       onClick={() => {
                                         const existing = [
                                           ...((reviews ?? []) as Review[]),
