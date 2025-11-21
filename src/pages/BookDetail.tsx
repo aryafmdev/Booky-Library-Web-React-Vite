@@ -1,6 +1,6 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   apiGetBookById,
   apiCreateLoan,
@@ -10,7 +10,8 @@ import {
   type CartItem,
   type Review,
 } from '../lib/api';
-import { addItem, removeItem } from '../features/cart/cartSlice.ts';
+import { addItem } from '../features/cart/cartSlice.ts';
+import type { RootState } from '../app/store';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StickyActionBar from '../components/StickyActionBar';
@@ -21,29 +22,35 @@ import image02 from '../assets/images/image02.png';
 import image03 from '../assets/images/image03.png';
 import image04 from '../assets/images/image04.png';
 import image05 from '../assets/images/image05.png';
+import image06 from '../assets/images/image06.png';
+import image07 from '../assets/images/image07.png';
+import image08 from '../assets/images/image08.png';
+import image09 from '../assets/images/image09.png';
+import image10 from '../assets/images/image10.png';
 import bookDetailImg from '../assets/images/book-detail.png';
 import { Icon } from '@iconify/react';
 
 export default function BookDetail() {
   const { bookId } = useParams<{ bookId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const fromReco = (location.state as { fromReco?: { id?: number; title?: string; author?: string; cover?: string } } | null)?.fromReco;
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const { user } = useSelector((s: RootState) => s.auth);
+  const storageKey = `cart_items:${user?.id ?? 'guest'}`;
   const isValidId = !!bookId && /^[0-9]+$/.test(bookId);
 
-  const {
-    data: book,
-    isLoading,
-    error,
-  } = useQuery<Book>({
+  useQuery<Book>({
     queryKey: ['book', bookId],
     queryFn: () => apiGetBookById(bookId!),
-    enabled: isValidId,
+    enabled: false,
   });
 
   const { data: reviews = [] } = useQuery<Review[]>({
     queryKey: ['reviews', 'book', bookId],
     queryFn: () => apiGetReviewsByBook(Number(bookId)),
-    enabled: isValidId,
+    enabled: false,
   });
 
   const mobileReviews = (reviews || []).slice(0, 3);
@@ -87,59 +94,53 @@ export default function BookDetail() {
     onMutate: async (newBookId: number) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      const optimisticItem: CartItem | null =
-        displayBook && displayBook.id === newBookId
-          ? { id: newBookId, book: displayBook, qty: 1 }
-          : null;
       queryClient.setQueryData<CartItem[]>(['cart'], (old) => {
         const arr = old ?? [];
-        return optimisticItem ? [...arr, optimisticItem] : arr;
+        const countSame = arr.filter((it) => it.book.id === newBookId).length;
+        const optimisticItem: CartItem | null =
+          displayBook && displayBook.id === newBookId
+            ? { id: -(newBookId * 100000 + countSame + 1), book: displayBook, qty: 1 }
+            : null;
+        const next = optimisticItem ? [...arr, optimisticItem] : arr;
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, JSON.stringify(next));
+          }
+        } catch (e) {
+          void e;
+        }
+        return next;
       });
       dispatch(addItem(String(newBookId)));
       return { previousCart };
     },
-    onError: (_err, newBookId, context) => {
-      if (context?.previousCart) {
-        queryClient.setQueryData<CartItem[]>(['cart'], context.previousCart);
-      }
-      dispatch(removeItem(String(newBookId)));
+    onError: () => {
+      // keep optimistic cart and badge for demo/non-auth flows
     },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 
-  const handleBorrow = () => {
-    if (!isValidId) return;
-    if (book && book.stock_available > 0) {
-      borrowMutation.mutate(book.id);
-    } else {
-      alert('Stok buku tidak tersedia.');
-    }
-  };
-  if (isLoading)
-    return <div className='container mx-auto py-8 text-center'>Loading...</div>;
-  if (isValidId && error)
-    return (
-      <div className='container mx-auto py-8 text-center text-red-500'>
-        Gagal memuat detail buku.
-      </div>
-    );
+  
+  
 
+  const idNum = Number(bookId);
+  const images = [image01, image02, image03, image04, image05, image06, image07, image08, image09, image10];
   const fallbackBook: Book = {
-    id: 0,
-    title: 'The Psychology of Money',
-    author: { id: 0, name: 'Morgan Housel' },
+    id: idNum,
+    title: (fromReco?.title ?? (isValidId ? `Book Name ${idNum}` : 'Book Name')),
+    author: { id: 0, name: fromReco?.author ?? 'Author Name' },
     isbn: '0000000000',
-    category: { id: 0, name: 'Business & Economics' },
+    category: { id: 0, name: 'Fiction/Non-Fiction/Self-Growth/Finance/Science/Education' },
     description:
-      'The Psychology of Money explores how emotions, biases, and human behavior shape the way we think about money, investing, and financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness, showing that financial success is not about knowledge, but about behavior.',
+      'Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim.',
     stock_available: 0,
     published_year: 2020,
-    cover_image: bookDetailImg,
+    cover_image: fromReco?.cover ?? images[((idNum - 1) % images.length + images.length) % images.length],
     status: 'Available',
   };
-  const displayBook = isValidId && book ? book : fallbackBook;
+  const displayBook = fallbackBook;
 
   const relatedBooks = [
     {
@@ -185,20 +186,20 @@ export default function BookDetail() {
       <main className='relative pb-[96px] pt-4 px-4xl '>
         {/* Breadcrumb */}
         <nav className='text-xs text-neutral-500 mb-3 md:mb-5'>
-          Home &gt; {displayBook.category.name} &gt; {displayBook.title}
+          Home &gt; {displayBook.category?.name ?? ''} &gt; {displayBook.title}
         </nav>
 
         {/* Book Info */}
         <section className='flex flex-col md:flex-row gap-5 md:gap-10'>
           <img
-            src={displayBook.cover_image}
+            src={displayBook.cover_image || bookDetailImg}
             alt={displayBook.title}
             className='w-full md:w-[337px] rounded-xl shadow-sm object-cover'
           />
 
           <div className='space-y-2 md:space-y-3'>
             <span className='inline-block rounded-full border border-neutral-300 px-sm py-xxs text-xs font-semibold text-neutral-700'>
-              {displayBook.category.name}
+              {displayBook.category?.name ?? ''}
             </span>
 
             <h1 className='text-xl md:text-2xl font-bold text-neutral-950 leading-tight'>
@@ -206,7 +207,7 @@ export default function BookDetail() {
             </h1>
 
             <p className='text-sm text-neutral-700'>
-              {displayBook.author.name}
+              {displayBook.author?.name ?? ''}
             </p>
 
             <div className='inline-flex items-center gap-xxs text-sm font-semibold text-neutral-900'>
@@ -237,7 +238,7 @@ export default function BookDetail() {
             {/* Desktop Buttons */}
             <div className='hidden md:flex gap-3 pt-3 items-center'>
               <button
-                className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200'
+                className='px-lg py-sm rounded-full bg-white text-neutral-950 font-bold border border-neutral-200 hover:bg-neutral-100'
                 onClick={() => {
                   if (isValidId && displayBook.id) {
                     addToCartMutation.mutate(displayBook.id);
@@ -248,15 +249,11 @@ export default function BookDetail() {
                 {addToCartMutation.isPending ? 'Adding…' : 'Add to Cart'}
               </button>
               <button
-                className='px-lg py-sm rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300'
-                onClick={handleBorrow}
-                disabled={
-                  borrowMutation.isPending ||
-                  !isValidId ||
-                  (displayBook && displayBook.stock_available === 0)
-                }
+                className='px-lg py-sm rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
+                onClick={() => navigate('/checkout', { state: { borrowBooks: [displayBook] } })}
+                disabled={borrowMutation.isPending}
               >
-                {borrowMutation.isPending ? 'Meminjam...' : 'Pinjam Buku'}
+                {borrowMutation.isPending ? 'Borrowing...' : 'Borrow Book'}
               </button>
               <button className='size-10 rounded-full border border-neutral-300 bg-white flex items-center justify-center text-neutral-700'>
                 <Icon icon='mdi:share-variant' className='size-5' />
@@ -274,7 +271,7 @@ export default function BookDetail() {
               ? mobileReviews.map((r) => (
                   <ReviewCard
                     key={r.id}
-                    name={r.book.author.name}
+                    name={r.book?.author?.name ?? ''}
                     rating={r.rating}
                     text={r.comment || ''}
                     date={
@@ -291,7 +288,7 @@ export default function BookDetail() {
               ? desktopReviews.map((r) => (
                   <ReviewCard
                     key={r.id}
-                    name={r.book.author.name}
+                    name={r.book?.author?.name ?? ''}
                     rating={r.rating}
                     text={r.comment || ''}
                     date={
@@ -316,7 +313,17 @@ export default function BookDetail() {
       </main>
 
       <Footer />
-      <StickyActionBar />
+      <StickyActionBar
+        onAddToCart={() => {
+          if (isValidId && displayBook.id) {
+            addToCartMutation.mutate(displayBook.id);
+          }
+        }}
+        onBorrow={() => navigate('/checkout', { state: { borrowBooks: [displayBook] } })}
+        addPending={addToCartMutation.isPending}
+        borrowPending={borrowMutation.isPending}
+        disableBorrow={false}
+      />
     </>
   );
 }

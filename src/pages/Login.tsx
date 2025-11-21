@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -10,7 +10,7 @@ import {
   authSuccessToken,
   authSuccessUser,
 } from '../features/auth/authSlice';
-import type { AppDispatch } from '../app/store';
+import type { RootState, AppDispatch } from '../app/store';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
@@ -38,6 +38,7 @@ const loginSchema = z.object({
 export default function Login() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const prevUser = useSelector((s: RootState) => s.auth.user);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,8 +60,37 @@ export default function Login() {
 
       // Ambil profil user; kalau gagal, biarkan user tetap login dengan token
       try {
-        const user = await apiMe(data.token);
-        dispatch(authSuccessUser(user));
+        const raw = await apiMe(data.token);
+        const r = raw as Record<string, unknown> | null | undefined;
+        const id = String(
+          (r?.id as string | number | undefined) ??
+            (r?.user_id as string | number | undefined) ??
+            (r?.uid as string | number | undefined) ??
+            ''
+        );
+        const nameSource =
+          (r?.name as string | undefined) ||
+          (r?.full_name as string | undefined) ||
+          (r?.username as string | undefined) ||
+          '';
+        const email = String((r?.email as string | undefined) ?? '');
+        const phone = (r?.phone as string | undefined) ?? undefined;
+        const role = (r?.role as string | undefined) ?? undefined;
+        const avatar = (r?.avatar as string | undefined) ?? undefined;
+        const cap = (s: string) => s
+          .trim()
+          .split(/\s+/)
+          .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
+          .join(' ');
+        const normalized = {
+          id: id || (email ? email : '0'),
+          name: cap((nameSource || '').trim() || (prevUser?.name || '')),
+          email,
+          phone,
+          role,
+          avatar,
+        };
+        dispatch(authSuccessUser(normalized));
       } catch (err) {
         // optional: simpan error tanpa menggagalkan login
         const message = err instanceof Error ? err.message : String(err);

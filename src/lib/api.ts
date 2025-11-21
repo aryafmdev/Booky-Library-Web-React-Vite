@@ -196,8 +196,30 @@ export async function apiGetCategories() {
 
 // Ambil buku berdasarkan ID
 export async function apiGetBookById(bookId: string) {
-  const res = await http<ApiResponse<Book>>(`/books/${bookId}`, { method: "GET" });
-  return res.data;
+  const res = await http<ApiResponse<Book | Record<string, unknown>>>(`/books/${bookId}`, { method: "GET" });
+  const raw = (res as ApiResponse<Record<string, unknown>>)?.data ?? (res as unknown as Record<string, unknown>);
+  const r = raw as Record<string, unknown>;
+  const author = ((): { id: number; name: string } => {
+    const obj = r.author as Record<string, unknown> | undefined;
+    const id = Number((obj?.id as number | string | undefined) ?? (r.author_id as number | string | undefined) ?? 0);
+    const name = String((obj?.name as string | undefined) ?? (r.author_name as string | undefined) ?? (r.author as string | undefined) ?? "");
+    return { id, name };
+  })();
+  const category = ((): { id: number; name: string } => {
+    const obj = r.category as Record<string, unknown> | undefined;
+    const id = Number((obj?.id as number | string | undefined) ?? (r.category_id as number | string | undefined) ?? 0);
+    const name = String((obj?.name as string | undefined) ?? (r.category_name as string | undefined) ?? (r.category as string | undefined) ?? "");
+    return { id, name };
+  })();
+  const id = Number((r.id as number | string | undefined) ?? 0);
+  const title = String((r.title as string | undefined) ?? "");
+  const isbn = String((r.isbn as string | undefined) ?? "");
+  const description = String((r.description as string | undefined) ?? "");
+  const stock_available = Number((r.stock_available as number | string | undefined) ?? 0);
+  const published_year = Number((r.published_year as number | string | undefined) ?? new Date().getFullYear());
+  const cover_image = String((r.cover_image as string | undefined) ?? "");
+  const status = String((r.status as string | undefined) ?? "");
+  return { id, title, author, isbn, category, description, stock_available, published_year, cover_image, status } as Book;
 }
 
 // Pinjam buku
@@ -314,8 +336,24 @@ export interface Review {
 }
 
 export async function apiGetMeProfile() {
-  const res = await http<ApiResponse<MeProfile>>("/me", { method: "GET" });
-  return res.data;
+  const parse = (res: ApiResponse<MeProfile> | MeProfile) => {
+    const raw = res as unknown as Record<string, unknown>;
+    const data = (raw && 'success' in raw && 'data' in raw ? (raw.data as Record<string, unknown>) : raw) as Record<string, unknown>;
+    const id = (data?.id as string | number | undefined) ?? (data?.user_id as string | number | undefined) ?? (data?.uid as string | number | undefined) ?? '';
+    const nameSrc = (data?.name as string | undefined) ?? (data?.full_name as string | undefined) ?? (data?.username as string | undefined) ?? '';
+    const cap = (s: string) => s.trim().split(/\s+/).map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '')).join(' ');
+    const email = String((data?.email as string | undefined) ?? '');
+    const phone = (data?.phone as string | undefined) ?? undefined;
+    const avatar = (data?.avatar as string | undefined) ?? undefined;
+    return { id: id || (email ? email : '0'), name: cap(nameSrc), email, phone, avatar } as MeProfile;
+  };
+  try {
+    const res = await http<ApiResponse<MeProfile> | MeProfile>("/me", { method: "GET" });
+    return parse(res);
+  } catch {
+    const res2 = await http<ApiResponse<MeProfile> | MeProfile>("/auth/me", { method: "GET" });
+    return parse(res2);
+  }
 }
 
 export async function apiUpdateMeProfile(payload: UpdateMePayload) {

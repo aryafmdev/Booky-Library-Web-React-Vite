@@ -11,4 +11,5 @@ export type AuthState = {
   user: User | null;
   status: 'idle' | 'loading' | 'authenticated' | 'error';
   error?: string | null;
+  justLoggedOut?: boolean;
 };

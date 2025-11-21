@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
 import {
   apiRegister,
   type ApiResponse,
   type RegisterPayload,
+  apiMe,
 } from '../lib/api';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod'; // Import zod for schema validation
 import logoBooky from '../assets/images/logo-booky.png';
-import { } from '../features/auth/authSlice';
+import { authSuccessToken, authSuccessUser, setUser } from '../features/auth/authSlice';
+import type { AppDispatch } from '../app/store';
 import { Icon } from '@iconify/react';
 import type { } from '../app/store';
 
@@ -48,6 +50,7 @@ const registerSchema = z
 
 export default function Register() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -64,7 +67,79 @@ export default function Register() {
     RegisterPayload
   >({
     mutationFn: apiRegister,
-    onSuccess: () => {
+    onSuccess: async (res) => {
+      const token = res?.data?.token;
+      if (token) {
+        dispatch(authSuccessToken(token));
+        try {
+          const raw = await apiMe(token);
+          const r = raw as Record<string, unknown> | null | undefined;
+          const id = String(
+            (r?.id as string | number | undefined) ??
+            (r?.user_id as string | number | undefined) ??
+            (r?.uid as string | number | undefined) ??
+            ''
+          );
+          const nameSource =
+            (r?.name as string | undefined) ||
+            (r?.full_name as string | undefined) ||
+            (r?.username as string | undefined) ||
+            '';
+          const emailVal = String((r?.email as string | undefined) ?? email);
+          const phoneVal = (r?.phone as string | undefined) ?? (phone || undefined);
+          const role = (r?.role as string | undefined) ?? undefined;
+          const avatar = (r?.avatar as string | undefined) ?? undefined;
+          const cap = (s: string) => s
+            .trim()
+            .split(/\s+/)
+            .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
+            .join(' ');
+          const normalized = {
+            id: id || (emailVal ? emailVal : '0'),
+            name: cap((nameSource || '').trim() || name),
+            email: emailVal,
+            phone: phoneVal,
+            role,
+            avatar,
+          };
+          dispatch(authSuccessUser(normalized));
+          navigate('/profile', { replace: true });
+          return;
+        } catch {
+          // fallback jika apiMe gagal, tetap set user dari input
+          const cap = (s: string) => s
+            .trim()
+            .split(/\s+/)
+            .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
+            .join(' ');
+          const newUser = {
+            id: email || '0',
+            name: cap(name),
+            email,
+            phone: phone || undefined,
+            role: undefined,
+            avatar: undefined,
+          };
+          dispatch(authSuccessUser(newUser));
+          navigate('/profile', { replace: true });
+          return;
+        }
+      }
+      // jika backend tidak balikan token, arahkan ke login
+      const cap = (s: string) => s
+        .trim()
+        .split(/\s+/)
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
+        .join(' ');
+      const newUser = {
+        id: email || '0',
+        name: cap(name),
+        email,
+        phone: phone || undefined,
+        role: undefined,
+        avatar: undefined,
+      };
+      dispatch(setUser(newUser));
       navigate('/login', { replace: true });
     },
   });

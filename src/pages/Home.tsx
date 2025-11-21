@@ -27,9 +27,18 @@ import authorImg from "../assets/images/author.png";
 import bookIcon from "../assets/icons/book-icon.png";
 import { useQuery } from "@tanstack/react-query";
 import { apiGetCategories, apiGetRecommendedBooks, apiGetAuthors, type Category, type Book, type Author } from "../lib/api";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { clearJustLoggedOut } from "../features/auth/authSlice";
+import type { AppDispatch } from "../app/store";
 
 function Home() {
   // Fixed categories per design
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(clearJustLoggedOut());
+  }, [dispatch]);
 
   useQuery<Category[]>({
     queryKey: ["categories"],
@@ -70,21 +79,13 @@ function Home() {
   ];
 
   const desiredCount = 10;
-  const mapped = (recoBooks || []).slice(0, desiredCount).map((b, i) => ({
-    id: b.id,
-    title: "Book Name",
+  const books = Array.from({ length: desiredCount }, (_, i) => ({
+    id: i + 1,
+    title: `Book Name ${i + 1}`,
     author: "Author name",
     rating: "4.9",
-    cover: b.cover_image || images[i % images.length],
+    cover: (recoBooks[i]?.cover_image) || images[i % images.length],
   }));
-  const placeholders = Array.from({ length: Math.max(0, desiredCount - mapped.length) }).map((_, idx) => ({
-    id: -1000 - idx,
-    title: "Book Name",
-    author: "Author name",
-    rating: "4.9",
-    cover: images[(mapped.length + idx) % images.length],
-  }));
-  const books = [...mapped, ...placeholders];
 
   const { data: apiAuthors = [] } = useQuery<Author[]>({
     queryKey: ["authors"],

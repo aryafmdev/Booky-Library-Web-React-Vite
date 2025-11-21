@@ -11,6 +11,7 @@ const initialState: AuthState = {
   user,
   status: token && user ? 'authenticated' : 'idle',
   error: null,
+  justLoggedOut: false,
 };
 
 const authSlice = createSlice({
@@ -24,12 +25,14 @@ const authSlice = createSlice({
     authSuccessToken(state, action: PayloadAction<string>) {
       state.status = 'authenticated';
       state.token = action.payload;
+      state.justLoggedOut = false;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', action.payload);
       }
     },
     authSuccessUser(state, action: PayloadAction<User>) {
       state.user = action.payload;
+      state.justLoggedOut = false;
       if (typeof window !== 'undefined') {
         localStorage.setItem('user', JSON.stringify(action.payload));
       }
@@ -38,6 +41,7 @@ const authSlice = createSlice({
       state.status = 'authenticated';
       state.token = action.payload.token;
       state.user = action.payload.user;
+      state.justLoggedOut = false;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', action.payload.token);
         localStorage.setItem('user', JSON.stringify(action.payload.user));
@@ -52,10 +56,14 @@ const authSlice = createSlice({
       state.token = null;
       state.user = null;
       state.error = null;
+      state.justLoggedOut = true;
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
+    },
+    clearJustLoggedOut(state) {
+      state.justLoggedOut = false;
     },
     setUser(state, action: PayloadAction<User | null>) {
       state.user = action.payload;
@@ -70,6 +78,7 @@ export const {
   setCredentials,
   authError,
   logout,
+  clearJustLoggedOut,
   setUser,
 } = authSlice.actions;
 

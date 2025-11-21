@@ -15,7 +15,11 @@ export default function Recommendation({ books }: { books: Book[] }) {
       <h2 className="text-display-lg font-bold text-neutral-950">Recommendation</h2>
       <div className="mt-xl grid grid-cols-2 md:grid-cols-5 gap-2xl">
         {books.map((b) => (
-          <Link to="/bookdetail" key={String(b.id)}>
+          <Link
+            to={`/books/${b.id}`}
+            key={String(b.id)}
+            state={{ fromReco: { id: b.id, title: b.title, author: b.author, cover: b.cover } }}
+          >
             <BookCard
               title={b.title}
               author={b.author}

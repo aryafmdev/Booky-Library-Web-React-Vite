@@ -1,29 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import type { RootState } from '../app/store';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import {
-  apiGetCart,
-  apiCheckoutCart,
-  apiDeleteCartItem,
-  type CartItem,
-} from '../lib/api';
-import { removeItem, clearCart, addItem } from '../features/cart/cartSlice.ts';
+import { apiGetCart, apiDeleteCartItem, type CartItem } from '../lib/api';
+import { removeItem } from '../features/cart/cartSlice.ts';
 
 export default function Cart() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector((s: RootState) => s.auth);
+  const storageKey = `cart_items:${user?.id ?? 'guest'}`;
   const { data: items = [], isLoading } = useQuery<CartItem[]>({
     queryKey: ['cart'],
     queryFn: apiGetCart,
+    staleTime: 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const [selected, setSelected] = useState<number[]>([]);
 
-  const allIds = useMemo(() => items.map((it) => it.book.id), [items]);
+  const allIds = useMemo(() => items.map((it) => it.id), [items]);
   const isAllSelected =
     selected.length > 0 && selected.length === allIds.length;
 
@@ -49,49 +52,48 @@ export default function Cart() {
     }) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] });
       const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      queryClient.setQueryData<CartItem[]>(['cart'], (old) =>
-        (old ?? []).filter((it) => it.id !== itemId)
-      );
-      setSelected((prev) => prev.filter((x) => x !== bookId));
+      queryClient.setQueryData<CartItem[]>(['cart'], (old) => {
+        const next = (old ?? []).filter((it) => it.id !== itemId);
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, JSON.stringify(next));
+          }
+        } catch (e) {
+          void e;
+        }
+        return next;
+      });
+      setSelected((prev) => prev.filter((x) => x !== itemId));
       dispatch(removeItem(String(bookId)));
       return { previousCart };
     },
-    onError: (_err, vars: { itemId: number; bookId: number }, context) => {
-      if (context?.previousCart) {
-        queryClient.setQueryData<CartItem[]>(['cart'], context.previousCart);
-        // rollback badge quantity
-        dispatch(addItem(String(vars.bookId)));
-      }
+    onError: () => {
+      // keep optimistic removal for demo/non-auth flows
     },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: apiCheckoutCart,
-    onMutate: async (_bookIds: number[]) => {
-      void _bookIds.length;
-      await queryClient.cancelQueries({ queryKey: ['cart'] });
-      const previousCart = queryClient.getQueryData<CartItem[]>(['cart']);
-      queryClient.setQueryData<CartItem[]>(['cart'], []);
-      setSelected([]);
-      dispatch(clearCart());
-      return { previousCart };
-    },
-    onError: (_err, _bookIds, context) => {
-      if (context?.previousCart) {
-        queryClient.setQueryData<CartItem[]>(['cart'], context.previousCart);
+  const selectedBooks = useMemo(() => items.filter((it) => selected.includes(it.id)).map((it) => it.book), [items, selected]);
+
+  useEffect(() => {
+    if (!isLoading && items.length === 0) {
+      try {
+        if (typeof window !== 'undefined') {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) {
+            const parsed = JSON.parse(raw) as CartItem[];
+            if (Array.isArray(parsed)) {
+              queryClient.setQueryData<CartItem[]>(['cart'], parsed);
+            }
+          }
+        }
+      } catch (e) {
+        void e;
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-    },
-    onSuccess: () => {
-      // keep invalidation; UI already cleared optimistically
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-    },
-  });
+    }
+  }, [isLoading, items.length, queryClient, storageKey]);
 
   const totalItems = selected.length;
 
@@ -122,14 +124,14 @@ export default function Cart() {
               <ul className='space-y-md'>
                 {items.map((it) => (
                   <li
-                    key={it.book.id}
+                    key={it.id}
                     className='pb-md border-b border-neutral-200'
                   >
                     <div className='flex items-start gap-md'>
                       <input
                         type='checkbox'
-                        checked={selected.includes(it.book.id)}
-                        onChange={() => toggleSelect(it.book.id)}
+                        checked={selected.includes(it.id)}
+                        onChange={() => toggleSelect(it.id)}
                       />
 
                       <img
@@ -145,24 +147,25 @@ export default function Cart() {
                         <div className='mt-xxs text-neutral-950 font-bold text-md'>
                           {it.book.title}
                         </div>
-                        <div className='text-xs text-neutral-700'>
-                          {it.book.author.name}
+                        <div className='flex items-center justify-between'>
+                          <div className='text-xs text-neutral-700'>
+                            {it.book.author.name}
+                          </div>
+                          <Button
+                            variant='outline'
+                            className='rounded-full text-neutral-500 hover:text-red'
+                            onClick={() =>
+                              removeMutation.mutate({
+                                itemId: it.id,
+                                bookId: it.book.id,
+                              })
+                            }
+                            disabled={removeMutation.isPending}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
-
-                      <Button
-                        variant='outline'
-                        className='rounded-full'
-                        onClick={() =>
-                          removeMutation.mutate({
-                            itemId: it.id,
-                            bookId: it.book.id,
-                          })
-                        }
-                        disabled={removeMutation.isPending}
-                      >
-                        Remove
-                      </Button>
                     </div>
                   </li>
                 ))}
@@ -180,27 +183,27 @@ export default function Cart() {
                 <span>{totalItems} Items</span>
               </div>
               <Button
-                className='mt-md w-full rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300'
-                onClick={() => checkoutMutation.mutate(selected)}
-                disabled={checkoutMutation.isPending || selected.length === 0}
+                className='mt-md w-full rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300 hover:bg-primary-400'
+                onClick={() => navigate('/checkout', { state: { borrowBooks: selectedBooks } })}
+                disabled={selected.length === 0}
               >
-                {checkoutMutation.isPending ? 'Borrowing…' : 'Borrow Book'}
+                Borrow Book
               </Button>
             </Card>
           </aside>
         </div>
 
-        <div className='md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 p-md flex items-center justify-between'>
+        <div className='md:hidden w-full sticky bottom-0 left-0 right-0 bg-white border-t border-neutral-200 p-md flex items-center justify-between'>
           <div className='text-sm'>
             <div className='text-neutral-700'>Total Book</div>
             <div className='text-neutral-950 font-bold'>{totalItems} Items</div>
           </div>
           <Button
-            className='rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300'
-            onClick={() => checkoutMutation.mutate(selected)}
-            disabled={checkoutMutation.isPending || selected.length === 0}
+            className='rounded-full bg-primary-300 text-white font-bold disabled:bg-neutral-300 hover:bg-primary-400'
+            onClick={() => navigate('/checkout', { state: { borrowBooks: selectedBooks } })}
+            disabled={selected.length === 0}
           >
-            {checkoutMutation.isPending ? 'Borrowing…' : 'Borrow Book'}
+            Borrow Book
           </Button>
         </div>
       </main>

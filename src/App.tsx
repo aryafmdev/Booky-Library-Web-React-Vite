@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation, useNavigate } from 'react-router-dom';
 import type { ReactElement } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Home from './pages/Home';
 import Register from './pages/Register';
@@ -16,11 +16,19 @@ import Profile from './pages/Profile';
 import Checkout from './pages/Checkout';
 import Success from './pages/Success';
 import { authSuccessUser, logout } from './features/auth/authSlice';
+import { setItems, clearCart } from './features/cart/cartSlice.ts';
 import type { RootState, AppDispatch } from './app/store';
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const token = useSelector((state: RootState) => state.auth.token);
-  if (!token) return <Navigate to="/login" replace />;
+  const justLoggedOut = useSelector((state: RootState) => state.auth.justLoggedOut);
+
+  if (!token) {
+    if (justLoggedOut) {
+      return <Navigate to="/" replace />;
+    }
+    return <Navigate to="/login" replace />;
+  }
   return children;
 }
 
@@ -30,9 +38,64 @@ function BookDetailRoute() {
   return isValid ? <BookDetail /> : <Navigate to="/bookdetail" replace />;
 }
 
+function RouteGuardEffects() {
+  const token = useSelector((state: RootState) => state.auth.token);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const prevToken = useRef<string | null>(token);
+
+  useEffect(() => {
+    const wasLoggedIn = !!prevToken.current;
+    const isLoggedIn = !!token;
+    prevToken.current = token ?? null;
+    if (wasLoggedIn && !isLoggedIn) {
+      const allowed = new Set(['/', '/login', '/register']);
+      if (!allowed.has(location.pathname)) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [token, location.pathname, navigate, dispatch]);
+
+  return null;
+}
+
 function App() {
   const token = useSelector((state: RootState) => state.auth.token);
+  const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
+
+  const normalizeUser = (raw: unknown) => {
+    const r = raw as Record<string, unknown> | null | undefined;
+    const id = String(
+      (r?.id as string | number | undefined) ??
+        (r?.user_id as string | number | undefined) ??
+        (r?.uid as string | number | undefined) ??
+        ''
+    );
+    const nameSource =
+      (r?.name as string | undefined) ||
+      (r?.full_name as string | undefined) ||
+      (r?.username as string | undefined) ||
+      '';
+    const cap = (s: string) => s
+      .trim()
+      .split(/\s+/)
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
+      .join(' ');
+    const email = String((r?.email as string | undefined) ?? '');
+    const phone = (r?.phone as string | undefined) ?? undefined;
+    const role = (r?.role as string | undefined) ?? undefined;
+    const avatar = (r?.avatar as string | undefined) ?? undefined;
+    return {
+      id: id || (email ? email : '0'),
+      name: cap(nameSource),
+      email,
+      phone,
+      role,
+      avatar,
+    };
+  };
 
   useEffect(() => {
     if (token) {
@@ -52,7 +115,8 @@ function App() {
           }
 
           const userData = await response.json();
-          dispatch(authSuccessUser(userData.data));
+          const normalized = normalizeUser(userData?.data ?? userData);
+          dispatch(authSuccessUser(normalized));
         } catch {
           // Jika token tidak valid, logout
           dispatch(logout());
@@ -63,21 +127,39 @@ function App() {
     }
   }, [token, dispatch]);
 
+  useEffect(() => {
+    const key = `cart_items:${user?.id ?? 'guest'}`;
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem(key);
+        const arr = raw ? (JSON.parse(raw) as Array<{ book?: { id?: number } }>) : [];
+        const items = Array.isArray(arr) ? arr.map((it) => String(it.book?.id ?? '')) : [];
+        dispatch(setItems(items.filter((x) => x)));
+      }
+    } catch {
+      dispatch(setItems([]));
+    }
+    if (!user) {
+      dispatch(clearCart());
+    }
+  }, [user, dispatch]);
+
   return (
     <BrowserRouter>
+      <RouteGuardEffects />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/books" element={<BookList />} />
-        <Route path="/bookdetail" element={<BookDetail />} />
-        <Route path="/books/:bookId" element={<BookDetailRoute />} />
-        <Route path="/authors/:authorId" element={<AuthorDetail />} />
-        <Route path="/authordetail" element={<AuthorDetail />} />
-        <Route path="/categories/:categoryId" element={<CategoryDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/success" element={<Success />} />
+        <Route path="/books" element={<ProtectedRoute><BookList /></ProtectedRoute>} />
+        <Route path="/bookdetail" element={<ProtectedRoute><BookDetail /></ProtectedRoute>} />
+        <Route path="/books/:bookId" element={<ProtectedRoute><BookDetailRoute /></ProtectedRoute>} />
+        <Route path="/authors/:authorId" element={<ProtectedRoute><AuthorDetail /></ProtectedRoute>} />
+        <Route path="/authordetail" element={<ProtectedRoute><AuthorDetail /></ProtectedRoute>} />
+        <Route path="/categories/:categoryId" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
+        <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+        <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
         <Route
           path="/profile"
           element={
