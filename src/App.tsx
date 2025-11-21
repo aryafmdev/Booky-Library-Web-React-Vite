@@ -6,9 +6,8 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import BookDetail from './pages/BookDetail';
-import BookList from './pages/BookList';
-import AddBook from './pages/AddBook';
-import EditBook from './pages/EditBook';
+import AddBook from './pages/admin/AddBook';
+import EditBook from './pages/admin/EditBook';
 import AuthorDetail from './pages/AuthorDetail';
 import CategoryDetail from './pages/CategoryDetail';
 import Cart from './pages/Cart';
@@ -20,6 +19,8 @@ import { setItems, clearCart } from './features/cart/cartSlice.ts';
 import type { RootState, AppDispatch } from './app/store';
 import { apiGetMeProfile } from './lib/api';
 import type { User } from './features/auth/types';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminBookPreview from './pages/admin/BookPreview';
 
 function ProtectedRoute({ children }: { children: ReactElement }) {
   const token = useSelector((state: RootState) => state.auth.token);
@@ -34,6 +35,15 @@ function ProtectedRoute({ children }: { children: ReactElement }) {
   return children;
 }
 
+function AdminRoute({ children }: { children: ReactElement }) {
+  const token = useSelector((state: RootState) => state.auth.token);
+  const user = useSelector((state: RootState) => state.auth.user);
+  const isAdmin = !!token && !!user && (/admin/i.test(String(user?.role ?? '')) || String(user?.email ?? '').toLowerCase() === 'admin@library.local');
+  if (!token) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/" replace />;
+  return children;
+}
+
 function BookDetailRoute() {
   const { bookId } = useParams();
   const isValid = !!bookId && /^[0-9]+$/.test(bookId);
@@ -42,6 +52,7 @@ function BookDetailRoute() {
 
 function RouteGuardEffects() {
   const token = useSelector((state: RootState) => state.auth.token);
+  const user = useSelector((state: RootState) => state.auth.user);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -58,6 +69,13 @@ function RouteGuardEffects() {
       }
     }
   }, [token, location.pathname, navigate, dispatch]);
+
+  useEffect(() => {
+    const isAdmin = !!token && !!user && (/admin/i.test(String(user?.role ?? '')) || String(user?.email ?? '').toLowerCase() === 'admin@library.local');
+    if (isAdmin && location.pathname === '/') {
+      navigate('/admin?tab=borrowed', { replace: true });
+    }
+  }, [token, user, location.pathname, navigate]);
 
   return null;
 }
@@ -138,7 +156,6 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/books" element={<ProtectedRoute><BookList /></ProtectedRoute>} />
         <Route path="/bookdetail" element={<ProtectedRoute><BookDetail /></ProtectedRoute>} />
         <Route path="/books/:bookId" element={<ProtectedRoute><BookDetailRoute /></ProtectedRoute>} />
         <Route path="/authors/:authorId" element={<ProtectedRoute><AuthorDetail /></ProtectedRoute>} />
@@ -147,6 +164,9 @@ function App() {
         <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/books/:bookId" element={<AdminRoute><AdminBookPreview /></AdminRoute>} />
+        <Route path="/admin/books/:bookId/edit" element={<AdminRoute><EditBook /></AdminRoute>} />
         <Route
           path="/profile"
           element={

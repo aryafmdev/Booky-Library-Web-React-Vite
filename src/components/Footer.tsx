@@ -3,10 +3,15 @@ import { Icon } from '@iconify/react';
 import { useLocation } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
 import { Button } from './ui/button';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../app/store';
 
 export default function Footer() {
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const { user } = useSelector((s: RootState) => s.auth);
+  const isAdmin = /admin/i.test(String(user?.role ?? '')) || String(user?.email ?? '').toLowerCase() === 'admin@library.local';
+  if (isAdmin) return null;
   
   return (
     <footer className='w-full border-t border-neutral-200 px-4xl py-3xl mt-6xl text-center'>

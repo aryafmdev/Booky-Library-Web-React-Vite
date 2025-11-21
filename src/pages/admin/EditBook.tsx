@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { z } from 'zod';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
-import { apiGetCategories, apiGetBookById, apiUpdateBook, type Category, type UpdateBookPayload, type Book } from '../lib/api';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { apiGetCategories, apiGetBookById, apiUpdateBook, type Category, type UpdateBookPayload, type Book } from '../../lib/api';
 
 // Skema validasi Zod untuk pembaruan
 const editBookSchema = z.object({
@@ -30,11 +30,32 @@ function EditBookForm({ book }: { book: Book }) {
     queryFn: apiGetCategories,
   });
 
+  const fixedCategories = useMemo(() => {
+    const desiredCategoryNames = [
+      'Fiction',
+      'Non-Fiction',
+      'Self-Growth',
+      'Finance',
+      'Science',
+      'Education',
+    ];
+    const byName = new Map((categories ?? []).map((c) => [c.name, c]));
+    return desiredCategoryNames.map((name, idx) => {
+      const found = byName.get(name);
+      return found ? found : ({ id: idx + 1, name } as Category);
+    });
+  }, [categories]);
+
+  const initialCatId = useMemo(() => {
+    const match = fixedCategories.find((c) => c.name === book.category.name);
+    return match?.id ?? (fixedCategories[0]?.id ?? book.category.id);
+  }, [fixedCategories, book.category.name, book.category.id]);
+
   const [formData, setFormData] = useState({
     title: book.title,
     author: book.author.name,
     isbn: book.isbn,
-    category_id: book.category.id,
+    category_id: initialCatId,
     description: book.description,
     stock_available: book.stock_available,
     published_year: book.published_year,
@@ -74,15 +95,12 @@ function EditBookForm({ book }: { book: Book }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-4 mx-auto">
       <Input name="title" placeholder="Title" value={formData.title || ''} onChange={handleChange} />
       {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
 
       <Input name="author" placeholder="Author" value={formData.author || ''} onChange={handleChange} />
       {errors.author && <p className="text-red-500 text-sm">{errors.author}</p>}
-
-      <Input name="isbn" placeholder="ISBN" value={formData.isbn || ''} onChange={handleChange} />
-      {errors.isbn && <p className="text-red-500 text-sm">{errors.isbn}</p>}
 
       <select
         name="category_id"
@@ -94,7 +112,7 @@ function EditBookForm({ book }: { book: Book }) {
         {isLoadingCategories ? (
           <option>Loading categories...</option>
         ) : (
-          categories?.map((cat) => (
+          fixedCategories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
@@ -113,16 +131,10 @@ function EditBookForm({ book }: { book: Book }) {
       />
       {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
 
-      <Input name="stock_available" type="number" placeholder="Stock" value={formData.stock_available || 0} onChange={handleChange} />
-      {errors.stock_available && <p className="text-red-500 text-sm">{errors.stock_available}</p>}
-
-      <Input name="published_year" type="number" placeholder="Published Year" value={formData.published_year || new Date().getFullYear()} onChange={handleChange} />
-      {errors.published_year && <p className="text-red-500 text-sm">{errors.published_year}</p>}
-
       <Input name="cover_image" placeholder="Cover Image URL" value={formData.cover_image || ''} onChange={handleChange} />
       {errors.cover_image && <p className="text-red-500 text-sm">{errors.cover_image}</p>}
 
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button type="submit" className="w-full bg-primary-300 text-white hover:bg-primary-400 rounded-full" disabled={isPending}>
         {isPending ? 'Updating Book...' : 'Update Book'}
       </Button>
       {mutationError && <p className="text-red-500 text-sm">{mutationError.message}</p>}
@@ -132,21 +144,61 @@ function EditBookForm({ book }: { book: Book }) {
 
 export default function EditBook() {
   const { bookId } = useParams<{ bookId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { fromReco?: { id?: number; title?: string; author?: string; cover?: string; description?: string }; slot?: number } | null;
+  const slotFromState = state?.slot;
+  const slot = typeof slotFromState === 'number' && slotFromState >= 1 && slotFromState <= 10 ? slotFromState : (Number(bookId) > 0 ? (((Number(bookId) - 1) % 10) + 1) : 1);
+  const idToCategory: Record<number, string> = {
+    1: 'Finance',
+    2: 'Education',
+    3: 'Self-Growth',
+    4: 'Non-Fiction',
+    5: 'Fiction',
+    6: 'Science',
+    7: 'Self-Growth',
+    8: 'Fiction',
+    9: 'Fiction',
+    10: 'Education',
+  };
   const { data: book, isLoading: isLoadingBook } = useQuery({
     queryKey: ['book', bookId],
     queryFn: () => apiGetBookById(bookId!),
     enabled: !!bookId,
   });
+  const lorem = 'Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim.';
 
   return (
     <>
       <Header />
       <div className="container mx-auto py-8 px-4 md:px-0">
         <h1 className="text-3xl font-bold mb-6">Edit Book</h1>
+        <div className="mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full"
+          >
+            Back
+          </button>
+        </div>
         {isLoadingBook ? (
           <div>Loading book data...</div>
-        ) : book ? (
-          <EditBookForm key={bookId} book={book} />
+        ) : (book || state?.fromReco) ? (
+          <EditBookForm
+            key={bookId}
+            book={{
+              id: Number(bookId),
+              title: state?.fromReco?.title ?? (book?.title ?? `Book Name ${slot}`),
+              author: { id: book?.author?.id ?? 0, name: state?.fromReco?.author ?? (book?.author?.name ?? 'Author name') },
+              isbn: book?.isbn ?? '0000000000',
+              category: { id: book?.category?.id ?? 0, name: idToCategory[slot] ?? (book?.category?.name ?? 'Fiction') },
+              description: state?.fromReco?.description ?? (book?.description ?? lorem),
+              stock_available: book?.stock_available ?? 0,
+              published_year: book?.published_year ?? new Date().getFullYear(),
+              cover_image: state?.fromReco?.cover ?? (book?.cover_image ?? ''),
+              status: book?.status ?? 'Available',
+            } as Book}
+          />
         ) : (
           <div>Book not found.</div>
         )}

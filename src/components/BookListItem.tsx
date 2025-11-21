@@ -5,9 +5,13 @@ import { Link } from 'react-router-dom';
 interface BookListItemProps {
   book: Book;
   onDelete: (bookId: number) => void;
+  canEditDelete?: boolean;
+  previewPathPrefix?: string;
+  previewState?: unknown;
+  editState?: unknown;
 }
 
-export default function BookListItem({ book, onDelete }: BookListItemProps) {
+export default function BookListItem({ book, onDelete, canEditDelete = true, previewPathPrefix = '/books', previewState, editState }: BookListItemProps) {
   return (
     <div className="flex items-center justify-between p-4 border border-neutral-200 rounded-xl bg-white">
       <div className="flex items-center gap-md">
@@ -23,18 +27,22 @@ export default function BookListItem({ book, onDelete }: BookListItemProps) {
         </div>
       </div>
       <div className="flex items-center gap-sm">
-        <Link to={`/books/${book.id}`} className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full">Preview</Link>
-        <Link to={`/books/${book.id}/edit`} className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full">Edit</Link>
-        <button
-          onClick={() => {
-            if (window.confirm('Are you sure you want to delete this book?')) {
-              onDelete(book.id);
-            }
-          }}
-          className="px-md py-xxs text-sm font-semibold text-red-600 bg-white border border-neutral-200 rounded-full"
-        >
-          Delete
-        </button>
+        <Link to={`${previewPathPrefix}/${book.id}`} state={previewState} className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full">Preview</Link>
+        {canEditDelete && (
+          <>
+            <Link to={`/admin/books/${book.id}/edit`} state={editState} className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full">Edit</Link>
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this book?')) {
+                  onDelete(book.id);
+                }
+              }}
+              className="px-md py-xxs text-sm font-semibold text-red-600 bg-white border border-neutral-200 rounded-full"
+            >
+              Delete
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

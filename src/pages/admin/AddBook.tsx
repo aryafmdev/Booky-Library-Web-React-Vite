@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
-import { apiGetCategories, apiAddBook, type Category, type AddBookPayload } from '../lib/api';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { apiGetCategories, apiAddBook, type Category, type AddBookPayload } from '../../lib/api';
 
 // Skema validasi Zod
 const addBookSchema = z.object({
@@ -40,6 +40,22 @@ export default function AddBook() {
     queryKey: ['categories'],
     queryFn: apiGetCategories,
   });
+
+  const fixedCategories = useMemo(() => {
+    const desiredCategoryNames = [
+      'Fiction',
+      'Non-Fiction',
+      'Self-Growth',
+      'Finance',
+      'Science',
+      'Education',
+    ];
+    const byName = new Map((categories ?? []).map((c) => [c.name, c]));
+    return desiredCategoryNames.map((name, idx) => {
+      const found = byName.get(name);
+      return found ? found : ({ id: idx + 1, name } as Category);
+    });
+  }, [categories]);
 
   const { mutate, isPending, error: mutationError } = useMutation({
     mutationFn: apiAddBook,
@@ -76,15 +92,20 @@ export default function AddBook() {
       <Header />
       <div className="container mx-auto py-8 px-4 md:px-0">
         <h1 className="text-3xl font-bold mb-6">Add New Book</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto">
+        <div className="mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="px-md py-xxs text-sm font-semibold text-neutral-900 bg-white border border-neutral-200 rounded-full"
+          >
+            Back
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4 mx-auto">
           <Input name="title" placeholder="Title" value={formData.title} onChange={handleChange} />
           {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
 
           <Input name="author" placeholder="Author" value={formData.author} onChange={handleChange} />
           {errors.author && <p className="text-red-500 text-sm">{errors.author}</p>}
-
-          <Input name="isbn" placeholder="ISBN" value={formData.isbn} onChange={handleChange} />
-          {errors.isbn && <p className="text-red-500 text-sm">{errors.isbn}</p>}
 
           <select
             name="category_id"
@@ -96,7 +117,7 @@ export default function AddBook() {
             {isLoadingCategories ? (
               <option>Loading categories...</option>
             ) : (
-              categories?.map((cat) => (
+              fixedCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
@@ -115,16 +136,10 @@ export default function AddBook() {
           />
           {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
 
-          <Input name="stock_available" type="number" placeholder="Stock" value={formData.stock_available} onChange={handleChange} />
-          {errors.stock_available && <p className="text-red-500 text-sm">{errors.stock_available}</p>}
-
-          <Input name="published_year" type="number" placeholder="Published Year" value={formData.published_year} onChange={handleChange} />
-          {errors.published_year && <p className="text-red-500 text-sm">{errors.published_year}</p>}
-
           <Input name="cover_image" placeholder="Cover Image URL" value={formData.cover_image} onChange={handleChange} />
           {errors.cover_image && <p className="text-red-500 text-sm">{errors.cover_image}</p>}
 
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button type="submit" className="w-full bg-primary-300 text-white hover:bg-primary-400 rounded-full" disabled={isPending}>
             {isPending ? 'Adding Book...' : 'Add Book'}
           </Button>
           {mutationError && <p className="text-red-500 text-sm">{mutationError.message}</p>}

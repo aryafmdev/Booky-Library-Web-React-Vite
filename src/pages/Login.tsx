@@ -54,11 +54,8 @@ export default function Login() {
         return;
       }
 
-      // Set token dulu agar route guard langsung mengizinkan akses
       dispatch(authSuccessToken(data.token));
-      navigate('/', { replace: true });
 
-      // Ambil profil user; kalau gagal, biarkan user tetap login dengan token
       try {
         const raw = await apiMe(data.token);
         const r = raw as Record<string, unknown> | null | undefined;
@@ -91,10 +88,12 @@ export default function Login() {
           avatar,
         };
         dispatch(authSuccessUser(normalized));
+        const isAdmin = /admin/i.test(String(normalized.role ?? '')) || String(normalized.email ?? '').toLowerCase() === 'admin@library.local';
+        navigate(isAdmin ? '/admin?tab=borrowed' : '/', { replace: true });
       } catch (err) {
-        // optional: simpan error tanpa menggagalkan login
         const message = err instanceof Error ? err.message : String(err);
         dispatch(authError(message));
+        navigate('/', { replace: true });
       }
     },
     onError: (err: Error) => dispatch(authError(err.message)),

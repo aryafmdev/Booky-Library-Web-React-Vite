@@ -74,12 +74,37 @@ type MeUser = {
 };
 
 export async function apiMe(token: string) {
-  const res = await http<MeUser | ApiResponse<MeUser>>(
-    '/auth/me',
-    { method: 'GET' },
-    token
+  const res = await http<unknown>('/auth/me', { method: 'GET' }, token);
+  const raw = res as Record<string, unknown>;
+  const dataLayer = ((): Record<string, unknown> => {
+    const d = (raw && 'success' in raw && 'data' in raw ? (raw.data as Record<string, unknown>) : raw) as Record<string, unknown>;
+    if (d && 'user' in d && typeof (d as Record<string, unknown>).user === 'object') {
+      return (d as Record<string, unknown>).user as Record<string, unknown>;
+    }
+    if (d && 'profile' in d && typeof (d as Record<string, unknown>).profile === 'object') {
+      return (d as Record<string, unknown>).profile as Record<string, unknown>;
+    }
+    return d;
+  })();
+  const id = String(
+    (dataLayer?.id as string | number | undefined) ??
+      (dataLayer?.user_id as string | number | undefined) ??
+      (dataLayer?.uid as string | number | undefined) ??
+      ''
   );
-  const user = (res as ApiResponse<MeUser>)?.data ?? (res as MeUser);
+  const nameSrc = (dataLayer?.name as string | undefined) ?? (dataLayer?.full_name as string | undefined) ?? (dataLayer?.username as string | undefined) ?? '';
+  const cap = (s: string) => s.trim().split(/\s+/).map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '')).join(' ');
+  const email = String((dataLayer?.email as string | undefined) ?? '');
+  const phone = (dataLayer?.phone as string | undefined) ?? undefined;
+  const roleRaw = (dataLayer?.role as string | undefined) ?? undefined;
+  const isAdminFlag = Boolean(
+    (dataLayer?.is_admin as boolean | undefined) ||
+      (dataLayer?.admin as boolean | undefined) ||
+      (dataLayer?.isAdmin as boolean | undefined)
+  );
+  const role = roleRaw ?? (isAdminFlag ? 'admin' : undefined);
+  const avatar = (dataLayer?.avatar as string | undefined) ?? undefined;
+  const user: MeUser = { id: id || (email ? email : '0'), name: cap(nameSrc), email, phone, role, avatar };
   return user;
 }
 
@@ -430,11 +455,13 @@ export interface AdminOverview {
 export async function apiGetMeProfile() {
   const parse = (res: ApiResponse<MeProfile> | MeProfile) => {
     const raw = res as unknown as Record<string, unknown>;
-    const data = (
-      raw && 'success' in raw && 'data' in raw
-        ? (raw.data as Record<string, unknown>)
-        : raw
-    ) as Record<string, unknown>;
+    let data = (raw && 'success' in raw && 'data' in raw ? (raw.data as Record<string, unknown>) : raw) as Record<string, unknown>;
+    if (data && 'user' in data && typeof (data as Record<string, unknown>).user === 'object') {
+      data = (data as Record<string, unknown>).user as Record<string, unknown>;
+    }
+    if (data && 'profile' in data && typeof (data as Record<string, unknown>).profile === 'object') {
+      data = (data as Record<string, unknown>).profile as Record<string, unknown>;
+    }
     const id =
       (data?.id as string | number | undefined) ??
       (data?.user_id as string | number | undefined) ??
@@ -454,11 +481,19 @@ export async function apiGetMeProfile() {
     const email = String((data?.email as string | undefined) ?? '');
     const phone = (data?.phone as string | undefined) ?? undefined;
     const avatar = (data?.avatar as string | undefined) ?? undefined;
+    const roleRaw = (data?.role as string | undefined) ?? undefined;
+    const isAdminFlag = Boolean(
+      (data?.is_admin as boolean | undefined) ||
+        (data?.admin as boolean | undefined) ||
+        (data?.isAdmin as boolean | undefined)
+    );
+    const role = roleRaw ?? (isAdminFlag ? 'admin' : undefined);
     return {
       id: id || (email ? email : '0'),
       name: cap(nameSrc),
       email,
       phone,
+      role,
       avatar,
     } as MeProfile;
   };
