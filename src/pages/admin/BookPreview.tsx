@@ -108,7 +108,20 @@ export default function BookPreview() {
               <div className='mt-xl flex items-center gap-sm'>
                 <Button
                   className='rounded-full bg-primary-300 text-white font-bold hover:bg-primary-400'
-                  onClick={() => navigate(`/admin/books/${effective.id}/edit`)}
+                  onClick={() =>
+                    navigate(`/admin/books/${effective.id}/edit`, {
+                      state: {
+                        fromReco: {
+                          id: effective.id,
+                          title: effective.title,
+                          author: effective.author.name,
+                          cover: effective.cover_image,
+                          description: effective.description,
+                        },
+                        slot,
+                      },
+                    })
+                  }
                 >
                   Edit
                 </Button>

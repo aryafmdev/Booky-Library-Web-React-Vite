@@ -7,8 +7,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '../../components/ui/input';
 import BookFilter from '../../components/BookFilter';
 import BookListItem from '../../components/BookListItem';
-import { Card } from '../../components/ui/card';
 import { Icon } from '@iconify/react';
+import BorrowedList from '../../components/BorrowedList';
 import image01 from '../../assets/images/image01.png';
 import image02 from '../../assets/images/image02.png';
 import image03 from '../../assets/images/image03.png';
@@ -40,7 +40,6 @@ export default function AdminDashboard() {
 
   const [searchUser, setSearchUser] = useState('');
   const [userPage, setUserPage] = useState(1);
-  const [searchBorrow, setSearchBorrow] = useState('');
   const [searchTerm, setSearchTerm] = useState(params.get('q') ?? '');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
@@ -153,9 +152,7 @@ export default function AdminDashboard() {
     queryKey: ['admin', 'loans', 'overdue'],
     queryFn: apiAdminGetOverdueLoans,
   });
-  const [borrowedStatus, setBorrowedStatus] = useState<
-    'All' | 'Active' | 'Returned' | 'Overdue'
-  >('All');
+  
   const [localLoans] = useState<Loan[]>(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -181,28 +178,10 @@ export default function AdminDashboard() {
     }
     return [];
   });
-  const filteredBorrowed = useMemo(() => {
-    const src = [...((overdueLoans ?? []) as Loan[]), ...localLoans];
-    const q = searchBorrow.trim().toLowerCase();
-    const resolveStatus = (l: Loan): string => {
-      const s = String(l.status ?? '').trim();
-      if (s) return s;
-      const due = l?.due_at ? new Date(l.due_at) : null;
-      const now = new Date();
-      if (due && now > due) return 'Overdue';
-      return 'Active';
-    };
-    return src.filter((l) => {
-      const st = resolveStatus(l);
-      const matchStatus = borrowedStatus === 'All' || st === borrowedStatus;
-      return (
-        matchStatus &&
-        (!q ||
-          l.book.title.toLowerCase().includes(q) ||
-          l.book.author.name.toLowerCase().includes(q))
-      );
-    });
-  }, [overdueLoans, localLoans, searchBorrow, borrowedStatus]);
+  
+  const borrowedItems = useMemo(() => {
+    return [...((overdueLoans ?? []) as Loan[]), ...localLoans];
+  }, [overdueLoans, localLoans]);
 
   const users = useMemo(() => {
     const arr = Array.from({ length: 60 }, (_, i) => ({
@@ -450,8 +429,6 @@ export default function AdminDashboard() {
                           title: book.title,
                           author: book.author?.name,
                           cover: book.cover_image,
-                          description:
-                            'Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim.',
                         },
                         slot: idx + 1,
                       }}
@@ -465,168 +442,7 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'borrowed' && (
-          <section className='mt-3xl'>
-            <h2 className='text-display-xs md:text-display-lg font-bold text-neutral-950'>
-              Borrowed List
-            </h2>
-            <div className='mt-md relative md:w-1/2'>
-              <Icon
-                icon='lucide:search'
-                className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
-              />
-              <Input
-                placeholder='Search'
-                value={searchBorrow}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchBorrow(e.target.value)
-                }
-                className='rounded-full pl-10 w-full border-gray-300'
-              />
-            </div>
-            <div className='mt-lg flex items-center gap-sm'>
-              {['All', 'Active', 'Returned', 'Overdue'].map((s) => {
-                const isSelected =
-                  borrowedStatus ===
-                  (s as 'All' | 'Active' | 'Returned' | 'Overdue');
-                const classes =
-                  s === 'Overdue'
-                    ? isSelected
-                      ? 'bg-red-50 text-red-700 border border-red-200'
-                      : 'bg-white text-red-700 border border-red-200'
-                    : isSelected
-                    ? 'bg-white text-primary-300 border border-primary-300'
-                    : 'bg-white text-neutral-900 border border-neutral-300';
-                return (
-                  <button
-                    key={s}
-                    onClick={() =>
-                      setBorrowedStatus(
-                        s as 'All' | 'Active' | 'Returned' | 'Overdue'
-                      )
-                    }
-                    className={`px-md py-xxs rounded-full text-sm font-semibold ${classes}`}
-                    aria-pressed={isSelected}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-            <div className='mt-lg space-y-md'>
-              {filteredBorrowed.map((l) => {
-                const dueLabel = l?.due_at
-                  ? new Date(l.due_at).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                    })
-                  : '';
-                const statusLabel = (() => {
-                  const s =
-                    String(l.status ?? '').trim() ||
-                    (l?.due_at && new Date() > new Date(l.due_at)
-                      ? 'Overdue'
-                      : 'Active');
-                  return s || 'Active';
-                })();
-                const borrowedLabel = l?.borrowed_at
-                  ? new Date(l.borrowed_at).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : '';
-                const durationText = (() => {
-                  if (l?.borrowed_at && l?.due_at) {
-                    const start = new Date(l.borrowed_at).getTime();
-                    const end = new Date(l.due_at).getTime();
-                    const days = Math.max(
-                      1,
-                      Math.round((end - start) / (1000 * 60 * 60 * 24))
-                    );
-                    return `Duration ${days} Days`;
-                  }
-                  return '';
-                })();
-                const borrowerName = 'John Doe';
-                return (
-                  <Card key={l.id} className='p-md border-neutral-200 bg-white'>
-                    <div className='flex items-center justify-between'>
-                      <div className='text-sm text-neutral-900 font-semibold flex items-center gap-xxs'>
-                        <span>Status</span>
-                        {statusLabel === 'Overdue' ? (
-                          <span className='inline-flex leading-tight px-sm py-xxs rounded-full border text-xs font-semibold bg-red-50 text-red-700 border-red-200'>
-                            Overdue
-                          </span>
-                        ) : statusLabel === 'Active' ? (
-                          <span className='inline-flex leading-tight px-sm py-xxs rounded-full border text-xs font-semibold bg-green-50 text-green-700 border-green-200'>
-                            Active
-                          </span>
-                        ) : (
-                          <span className='inline-flex leading-tight px-sm py-xxs rounded-full border text-xs font-semibold bg-white text-neutral-900 border-neutral-300'>
-                            Returned
-                          </span>
-                        )}
-                      </div>
-                      {dueLabel && (
-                        <div className='flex items-center gap-xxs'>
-                          <span className='text-sm font-bold text-neutral-900'>
-                            Due Date
-                          </span>
-                          <span className='inline-flex leading-tight px-sm py-xxs rounded-full border border-red-200 bg-red-50 text-red-700 text-xs font-bold'>
-                            {dueLabel}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className='my-sm h-px bg-neutral-200' />
-                    <div className='grid grid-cols-[1fr_auto] gap-md items-start'>
-                      <div className='flex items-start gap-md'>
-                        <img
-                          src={l.book.cover_image}
-                          alt={l.book.title}
-                          className='w-20 h-28 rounded-md object-cover'
-                        />
-                        <div className='flex-1'>
-                          <div className='flex items-center gap-xxs'>
-                            <span className='inline-block rounded-full border border-neutral-300 px-sm py-xxs text-xs font-semibold text-neutral-700'>
-                              {l.book.category.name}
-                            </span>
-                          </div>
-                          <div className='mt-xxs text-neutral-950 font-bold text-md'>
-                            {l.book.title}
-                          </div>
-                          <div className='text-xs text-neutral-700'>
-                            {l.book.author.name}
-                          </div>
-                          <div className='mt-xxs text-xs text-neutral-700'>
-                            {borrowedLabel && <span>{borrowedLabel}</span>}
-                            {borrowedLabel && durationText ? (
-                              <span> · </span>
-                            ) : null}
-                            {durationText && <span>{durationText}</span>}
-                          </div>
-                        </div>
-                      </div>
-                      <div className='text-right'>
-                        <div className='text-xs text-neutral-700'>
-                          borrower’s name
-                        </div>
-                        <div className='text-md font-bold text-neutral-950'>
-                          {borrowerName}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-              {filteredBorrowed.length === 0 && (
-                <div className='text-sm text-neutral-700'>
-                  No overdue loans.
-                </div>
-              )}
-            </div>
-          </section>
+          <BorrowedList items={borrowedItems} showBorrowerName borrowerName={'John Doe'} variant={'admin'} />
         )}
       </main>
     </div>
