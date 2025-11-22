@@ -5,7 +5,19 @@ This project is designed to be **audit‑ready**, mentor‑compatible, and focus
 
 ---
 
+## 🌐 Live Demo
+
+👉 Try the application here: [Booky Library Web](https://booky-library-web.vercel.app/)
+
+Use the following dummy account to log in and explore the features:
+
+- **Email:** `johndoe@example.com`
+- **Password:** `123456`
+
+---
+
 ## ✨ Features
+
 - 🔐 Authentication (Register, Login, Forgot Password)
 - 📖 Book List with search & filter
 - 📚 Book Detail with stock & reviews
@@ -17,6 +29,7 @@ This project is designed to be **audit‑ready**, mentor‑compatible, and focus
 ---
 
 ## 🛠 Tech Stack
+
 - ⚛️ **React + TypeScript + Vite** → core framework & dev server
 - 🎨 **Tailwind CSS + shadcn/ui** → styling & UI components
 - 🔄 **Redux Toolkit** → global auth state (token, user info)
@@ -32,6 +45,7 @@ This project is designed to be **audit‑ready**, mentor‑compatible, and focus
 ## 🚀 Getting Started
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/your-username/library-web-app.git
 cd library-web-app
@@ -81,3 +95,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 📜 License
 This project is licensed under the MIT License.
+```
