@@ -42,6 +42,34 @@ Use the following dummy account to log in and explore the features:
 
 ---
 
+## 📸 Preview Booky App
+
+### 🏠 Home Page
+![Home Page](public/booky-preview-home-page.png)
+
+### 🔍 Filter Page
+![Filter Page](public/booky-preview-filter-page.png)
+
+### 📖 Detail Page
+![Detail Page](public/booky-preview-detail-page.png)
+
+### 📥 Borrowed Page
+![Borrowed Page](public/booky-preview-borrowed-page.png)
+
+### 🛒 Cart Page
+![Cart Page](public/booky-preview-cart-page.png)
+
+### 💳 Checkout Page
+![Checkout Page](public/booky-preview-checkout-page.png)
+
+### ✅ Success Page
+![Success Page](public/booky-preview-success-page.png)
+
+### 🔐 Login Page
+![Login Page](public/booky-preview-login-page.png)
+
+---
+
 ## 🚀 Getting Started
 
 ### 1. Clone the repository
