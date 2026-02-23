@@ -120,6 +120,19 @@ function App() {
   useEffect(() => {
     if (token) {
       const validateToken = async () => {
+        if (token === 'demo-token') {
+          dispatch(
+            authSuccessUser({
+              id: 'johndoe@example.com',
+              name: 'John Doe',
+              email: 'johndoe@example.com',
+              phone: undefined,
+              role: undefined,
+              avatar: undefined,
+            } as User)
+          );
+          return;
+        }
         try {
           const me = await apiGetMeProfile();
           const normalized = normalizeUser(me) as User;

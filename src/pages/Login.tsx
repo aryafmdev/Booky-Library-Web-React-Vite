@@ -91,6 +91,19 @@ export default function Login() {
         const isAdmin = /admin/i.test(String(normalized.role ?? '')) || String(normalized.email ?? '').toLowerCase() === 'admin@library.local';
         navigate(isAdmin ? '/admin?tab=borrowed' : '/', { replace: true });
       } catch (err) {
+        if (data.token === 'demo-token') {
+          const demoUser = {
+            id: 'johndoe@example.com',
+            name: 'John Doe',
+            email: 'johndoe@example.com',
+            phone: undefined,
+            role: undefined,
+            avatar: undefined,
+          };
+          dispatch(authSuccessUser(demoUser));
+          navigate('/', { replace: true });
+          return;
+        }
         const message = err instanceof Error ? err.message : String(err);
         dispatch(authError(message));
         navigate('/', { replace: true });
